@@ -53,7 +53,7 @@ docker compose up --build
 Esto expone:
 
 - App: `http://localhost:3000`
-- Postgres: `localhost:5432`
+- Postgres: `localhost:5433` (dentro de Docker la app usa `postgres:5432`)
 
 El contenedor de la app espera a Postgres, corre `npm run db:migrate` y, con `SEED_DEMO=true`, carga el restaurante demo. El seed no pisa datos si `demo-bistro` ya existe; para recrearlo usar:
 
