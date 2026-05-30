@@ -1,0 +1,14 @@
+.next/
+node_modules/
+dist/
+coverage/
+.env
+.env*.local
+!.env.example
+*.tsbuildinfo
+drizzle/meta/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log

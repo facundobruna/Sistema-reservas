@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+}
+
+:root {
+  --background: #f8faf9;
+  --foreground: #101414;
+  --muted: #eef2ef;
+  --muted-foreground: #5b6661;
+  --border: #d8e0dc;
+  --card: #ffffff;
+  --accent: #0f766e;
+  --accent-foreground: #ffffff;
+  --danger: #be123c;
+  --warning: #b45309;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 42%, white);
+  outline-offset: 2px;
+}
+
+.booking-brand {
+  --accent: var(--restaurant-accent, #0f766e);
+}
