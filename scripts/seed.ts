@@ -16,6 +16,12 @@ async function main() {
 
   try {
     await client.query("BEGIN");
+    const existing = await client.query("SELECT id FROM restaurant WHERE slug = 'demo-bistro' LIMIT 1");
+    if (existing.rows[0] && process.env.RESET_DEMO !== "true") {
+      await client.query("COMMIT");
+      console.log("Seed skipped: demo-bistro already exists. Set RESET_DEMO=true to recreate it.");
+      return;
+    }
     await client.query("DELETE FROM restaurant WHERE slug = 'demo-bistro'");
 
     const restaurant = await client.query<{ id: string }>(

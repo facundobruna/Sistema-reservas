@@ -42,6 +42,40 @@ Credenciales demo del staff:
 - Email: `owner@demo-bistro.test`
 - Password: valor de `STAFF_DEMO_PASSWORD` o `admin123`
 
+## Docker
+
+Levantar app + Postgres:
+
+```bash
+docker compose up --build
+```
+
+Esto expone:
+
+- App: `http://localhost:3000`
+- Postgres: `localhost:5432`
+
+El contenedor de la app espera a Postgres, corre `npm run db:migrate` y, con `SEED_DEMO=true`, carga el restaurante demo. El seed no pisa datos si `demo-bistro` ya existe; para recrearlo usar:
+
+```bash
+docker compose down
+docker compose up --build -d
+docker compose exec app sh -lc "RESET_DEMO=true npm run db:seed"
+```
+
+Para ver logs:
+
+```bash
+docker compose logs -f app
+```
+
+Para resetear toda la base local de Docker:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
 ## Comandos
 
 ```bash

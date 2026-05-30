@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: reservas-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sistema_reservas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - reservas-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sistema_reservas"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: reservas-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/sistema_reservas
+      APP_URL: http://localhost:3000
+      AUTH_SECRET: docker-local-change-me-32-characters-minimum
+      STAFF_DEMO_PASSWORD: admin123
+      JOBS_SECRET: docker-local-jobs-secret
+      EMAIL_FROM: Reservas <reservas@example.com>
+      EMAIL_PROVIDER: console
+      ENABLE_PG_BOSS: "false"
+      SEED_DEMO: "true"
+      RESET_DEMO: "false"
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+
+volumes:
+  reservas-postgres-data:

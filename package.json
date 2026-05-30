@@ -14,7 +14,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
     "worker:notifications": "tsx scripts/worker.ts",
-    "setup": "npm install && npm run db:migrate && npm run db:seed"
+    "setup": "npm install && npm run db:migrate && npm run db:seed",
+    "docker:start": "sh scripts/docker-start.sh"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.0",
