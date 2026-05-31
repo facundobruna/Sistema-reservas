@@ -1,13 +1,27 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CalendarDots, CaretLeft, CaretRight, CheckCircle, Clock, MapPin, UsersThree } from "@phosphor-icons/react";
+import {
+  CalendarDots,
+  CaretLeft,
+  CaretRight,
+  CheckCircle,
+  Clock,
+  ForkKnife,
+  MapPin,
+  NotePencil,
+  ShieldCheck,
+  User,
+  UsersThree,
+  WarningCircle
+} from "@phosphor-icons/react";
 import { DateTime } from "luxon";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Field, Panel, inputClassName } from "@/components/ui/field";
+import { Badge, EmptyState, Field, Panel, Skeleton, inputClassName } from "@/components/ui/field";
 import type { PublicRestaurant } from "@/features/repositories";
+import type { Locale } from "@/lib/i18n";
 
 const steps = ["party", "date", "time", "zone", "details", "requests", "confirm"] as const;
 type Step = (typeof steps)[number];
@@ -20,19 +34,166 @@ type ReservationResponse = {
   reservation: {
     id: string;
     startsAt: string;
+    endsAt?: string;
     partySize: number;
+    serviceId?: string | null;
+    zoneId?: string | null;
   };
 };
+
+const copy = {
+  es: {
+    shellKicker: "Reserva guiada",
+    shellTitle: "Elegimos la mejor mesa disponible para tu grupo.",
+    shellBody: "El horario se vuelve a validar al confirmar, asi evitamos dobles reservas incluso cuando varias personas reservan al mismo tiempo.",
+    stepWord: "Paso",
+    summary: "Tu seleccion",
+    party: "Comensales",
+    partyTitle: "¿Cuantas personas vienen?",
+    partyBody: "Usamos el tamano del grupo para sugerir una unidad que no desperdicie mesas grandes.",
+    date: "Fecha",
+    dateTitle: "Elegí el día",
+    dateBody: "Mostramos horarios en la zona horaria del restaurante.",
+    time: "Horario",
+    timeTitle: "Elegí un horario",
+    timeBody: "Cada opcion respeta disponibilidad de mesa y ritmo de cocina.",
+    zone: "Zona",
+    zoneTitle: "Preferencia de salon",
+    zoneBody: "Si no tenes preferencia, podemos asignarte el mejor lugar disponible.",
+    details: "Datos",
+    detailsTitle: "Datos de contacto",
+    detailsBody: "El telefono es necesario para gestionar la reserva y enviar recordatorios.",
+    requests: "Pedidos",
+    requestsTitle: "Algo que el equipo deba saber",
+    requestsBody: "Celebraciones, accesibilidad o una mesa tranquila. No prometemos disponibilidad, pero lo dejamos visible.",
+    confirm: "Confirmar",
+    confirmTitle: "Revisá y confirmá",
+    confirmBody: "Vamos a validar el horario una vez mas antes de guardar la reserva.",
+    confirmedTitle: "Reserva confirmada",
+    confirmedBody: "Te enviamos la confirmacion por email si dejaste una direccion.",
+    name: "Nombre",
+    email: "Email",
+    phone: "Telefono",
+    optionalEmail: "Opcional, pero recomendado para confirmaciones.",
+    invalidEmail: "Ingresá un email válido o dejalo vacío.",
+    requiredPhone: "Ingresá un telefono valido.",
+    requiredName: "Ingresá tu nombre.",
+    specialRequests: "Requerimientos especiales",
+    noSlotsTitle: "No hay horarios para esa combinacion",
+    noSlotsBody: "Probá otra fecha, cambia la cantidad de comensales o dejá la zona abierta.",
+    loadingSlots: "Buscando mesas disponibles",
+    errorSlots: "No pudimos consultar la disponibilidad",
+    retry: "Reintentar",
+    anyZone: "Cualquier zona",
+    noPreference: "Sin preferencia",
+    selected: "Seleccionado",
+    back: "Atras",
+    next: "Continuar",
+    confirming: "Confirmando",
+    complete: "Confirmar reserva",
+    reservationCode: "Codigo de reserva",
+    editSelection: "Editar seleccion",
+    calendar: "Abrir en Google Calendar",
+    service: "Servicio",
+    unavailable: "Ese horario acaba de ocuparse. Elegí otro para seguir.",
+    trust: ["Disponibilidad en vivo", "Sin doble booking", "Recordatorio por email"]
+  },
+  en: {
+    shellKicker: "Guided booking",
+    shellTitle: "We choose the best available table for your party.",
+    shellBody: "The time is checked again at confirmation, so the room cannot be double-booked even under concurrent bookings.",
+    stepWord: "Step",
+    summary: "Your selection",
+    party: "Guests",
+    partyTitle: "How many guests are coming?",
+    partyBody: "Party size helps us suggest a table unit without wasting larger tables.",
+    date: "Date",
+    dateTitle: "Choose the day",
+    dateBody: "Times are shown in the restaurant local timezone.",
+    time: "Time",
+    timeTitle: "Choose a time",
+    timeBody: "Every option respects table inventory and kitchen pacing.",
+    zone: "Area",
+    zoneTitle: "Dining-room preference",
+    zoneBody: "If you have no preference, we can assign the best available spot.",
+    details: "Details",
+    detailsTitle: "Contact details",
+    detailsBody: "Phone is required to manage the booking and send reminders.",
+    requests: "Requests",
+    requestsTitle: "Anything the team should know",
+    requestsBody: "Celebrations, accessibility, or a quiet table. We cannot promise availability, but the team will see it.",
+    confirm: "Confirm",
+    confirmTitle: "Review and confirm",
+    confirmBody: "We will validate the time once more before saving the reservation.",
+    confirmedTitle: "Reservation confirmed",
+    confirmedBody: "We sent the confirmation by email if you added an address.",
+    name: "Name",
+    email: "Email",
+    phone: "Phone",
+    optionalEmail: "Optional, but recommended for confirmations.",
+    invalidEmail: "Enter a valid email or leave it empty.",
+    requiredPhone: "Enter a valid phone number.",
+    requiredName: "Enter your name.",
+    specialRequests: "Special requests",
+    noSlotsTitle: "No times for that combination",
+    noSlotsBody: "Try another date, change party size, or leave the area open.",
+    loadingSlots: "Looking for available tables",
+    errorSlots: "We could not check availability",
+    retry: "Try again",
+    anyZone: "Any area",
+    noPreference: "No preference",
+    selected: "Selected",
+    back: "Back",
+    next: "Continue",
+    confirming: "Confirming",
+    complete: "Confirm reservation",
+    reservationCode: "Reservation code",
+    editSelection: "Edit selection",
+    calendar: "Open in Google Calendar",
+    service: "Service",
+    unavailable: "That time was just taken. Choose another time to continue.",
+    trust: ["Live availability", "No double booking", "Email reminder"]
+  }
+} as const;
+
+const stepMeta = {
+  party: { icon: UsersThree },
+  date: { icon: CalendarDots },
+  time: { icon: Clock },
+  zone: { icon: MapPin },
+  details: { icon: User },
+  requests: { icon: NotePencil },
+  confirm: { icon: CheckCircle }
+} as const;
 
 function todayIn(timezone: string) {
   return DateTime.now().setZone(timezone).toISODate() ?? "";
 }
 
-export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) {
+function isValidEmail(value: string) {
+  return value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function googleCalendarUrl(restaurant: PublicRestaurant, reservation?: ReservationResponse["reservation"]) {
+  if (!reservation) return "#";
+  const start = DateTime.fromISO(reservation.startsAt).toUTC().toFormat("yyyyLLdd'T'HHmmss'Z'");
+  const end = DateTime.fromISO(reservation.endsAt ?? reservation.startsAt).toUTC().toFormat("yyyyLLdd'T'HHmmss'Z'");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `Reserva en ${restaurant.name}`,
+    dates: `${start}/${end}`,
+    details: `Reserva para ${reservation.partySize} personas.`,
+    location: restaurant.name
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+export function BookingWizard({ restaurant, locale }: { restaurant: PublicRestaurant; locale: Locale }) {
+  const c = copy[locale];
   const router = useRouter();
   const search = useSearchParams();
   const initialDate = todayIn(restaurant.timezone);
-  const step = (search.get("step") as Step | null) ?? "party";
+  const step = steps.includes(search.get("step") as Step) ? (search.get("step") as Step) : "party";
   const partySize = Number(search.get("party") ?? 2);
   const date = search.get("date") ?? initialDate;
   const time = search.get("time");
@@ -44,12 +205,22 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
   const params = useMemo(() => new URLSearchParams(search.toString()), [search]);
   const currentIndex = Math.max(0, steps.indexOf(step));
   const needsZone = restaurant.zones.length > 1;
+  const selectedZone = restaurant.zones.find((zone) => zone.id === zoneId);
+  const selectedService = restaurant.services.find((service) => service.id === serviceId);
+  const selectedTimeLabel = time ? DateTime.fromISO(time).setZone(restaurant.timezone).toFormat("HH:mm") : null;
+  const nameValid = customer.name.trim().length > 1;
+  const phoneValid = customer.phone.trim().length >= 7;
+  const emailValid = isValidEmail(customer.email.trim());
+
+  function push(next: URLSearchParams) {
+    router.push(`?${next.toString()}`, { scroll: false });
+  }
 
   function setParam(key: string, value: string | null) {
     const next = new URLSearchParams(params.toString());
     if (value === null || value === "") next.delete(key);
     else next.set(key, value);
-    router.push(`?${next.toString()}`, { scroll: false });
+    push(next);
   }
 
   function setParams(values: Record<string, string | null>) {
@@ -58,13 +229,23 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
       if (value === null || value === "") next.delete(key);
       else next.set(key, value);
     }
-    router.push(`?${next.toString()}`, { scroll: false });
+    push(next);
   }
 
   function go(nextStep: Step) {
     const next = new URLSearchParams(params.toString());
     next.set("step", nextStep);
-    router.push(`?${next.toString()}`, { scroll: false });
+    push(next);
+  }
+
+  function nextStep() {
+    if (step === "time" && !needsZone) return "details";
+    return steps[currentIndex + 1] ?? "confirm";
+  }
+
+  function prevStep() {
+    if (step === "details" && !needsZone) return "time";
+    return steps[currentIndex - 1] ?? "party";
   }
 
   const availability = useQuery({
@@ -94,13 +275,17 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
           partySize,
           zoneId: zoneId || null,
           serviceId: serviceId || null,
-          customer,
-          specialRequests: specialRequests || null
+          customer: {
+            name: customer.name.trim(),
+            email: customer.email.trim() || null,
+            phone: customer.phone.trim()
+          },
+          specialRequests: specialRequests.trim() || null
         })
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { message?: string };
-        throw new Error(body.message ?? "reservation_failed");
+        throw new Error(body.message ?? c.unavailable);
       }
       return (await response.json()) as ReservationResponse;
     },
@@ -108,191 +293,452 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
   });
 
   const selectedSlot = availability.data?.slots.find((slot) => slot.time === time);
+  const canProceed =
+    (step === "party" && partySize > 0) ||
+    (step === "date" && Boolean(date)) ||
+    (step === "time" && Boolean(selectedSlot)) ||
+    (step === "zone" && (!needsZone || Boolean(zoneId))) ||
+    (step === "details" && nameValid && phoneValid && emailValid) ||
+    step === "requests";
 
   return (
-    <Panel className="grid min-h-[640px] content-between overflow-hidden">
-      <div className="border-b border-[var(--border)] px-4 py-4 sm:px-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Paso {currentIndex + 1} / 7</p>
-            <h2 className="mt-1 text-xl font-semibold">Reserva</h2>
-          </div>
-          <div className="flex gap-1">
-            {steps.map((item, index) => (
-              <span
-                aria-label={item}
-                className={`h-2 w-6 rounded-full ${index <= currentIndex ? "bg-[var(--accent)]" : "bg-[var(--muted)]"}`}
-                key={item}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 py-5 sm:px-6">
-        {step === "party" ? (
-          <section className="grid gap-5">
-            <StepHeading icon={<UsersThree size={22} weight="duotone" />} title="Comensales" />
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((value) => (
-                <Button
-                  key={value}
-                  variant={partySize === value ? "primary" : "secondary"}
-                  onClick={() => setParam("party", String(value))}
-                >
-                  {value}
-                </Button>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {step === "date" ? (
-          <section className="grid gap-5">
-            <StepHeading icon={<CalendarDots size={22} weight="duotone" />} title="Fecha" />
-            <Field label="Fecha">
-              <input className={inputClassName} min={initialDate} type="date" value={date} onChange={(event) => setParam("date", event.target.value)} />
-            </Field>
-          </section>
-        ) : null}
-
-        {step === "time" ? (
-          <section className="grid gap-5">
-            <StepHeading icon={<Clock size={22} weight="duotone" />} title="Horario" />
-            {availability.isLoading ? <p className="text-sm text-[var(--muted-foreground)]">Buscando horarios...</p> : null}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {availability.data?.slots.map((slot) => {
-                const local = DateTime.fromISO(slot.time).setZone(restaurant.timezone);
+    <Panel className="reveal-in reveal-delay-1 min-h-[calc(100dvh-2rem)] overflow-hidden lg:min-h-[calc(100dvh-3rem)]">
+      <div className="grid min-h-[calc(100dvh-2.75rem)] lg:grid-cols-[14rem_1fr]">
+        <aside className="hidden border-r border-[var(--border)] bg-[color-mix(in_srgb,var(--muted)_34%,transparent)] p-4 lg:grid">
+          <div className="grid content-between">
+            <div className="grid gap-2">
+              {steps.map((item, index) => {
+                const Icon = stepMeta[item].icon;
+                const active = item === step;
+                const done = index < currentIndex;
                 return (
-                  <Button
-                    key={slot.time}
-                    variant={time === slot.time ? "primary" : "secondary"}
-                    onClick={() => {
-                      setParams({ time: slot.time, serviceId: slot.serviceId });
-                    }}
+                  <button
+                    className={`grid grid-cols-[2rem_1fr] items-center gap-3 rounded-[var(--radius-sm)] px-2 py-2 text-left text-sm transition-all duration-500 ease-[var(--ease-press)] ${
+                      active ? "bg-[var(--card-raised)] text-[var(--foreground)] shadow-[var(--shadow-soft)]" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+                    }`}
+                    key={item}
+                    onClick={() => go(item)}
+                    type="button"
                   >
-                    {local.toFormat("HH:mm")}
-                  </Button>
+                    <span className={`grid h-8 w-8 place-items-center rounded-[var(--radius-xs)] ${active || done ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "bg-[var(--card)]"}`}>
+                      <Icon size={16} weight={active ? "fill" : "duotone"} />
+                    </span>
+                    <span className="font-semibold">{c[item]}</span>
+                  </button>
                 );
               })}
             </div>
-            {!availability.isLoading && !availability.data?.slots.length ? (
-              <p className="text-sm text-[var(--muted-foreground)]">No hay horarios disponibles.</p>
-            ) : null}
-          </section>
-        ) : null}
-
-        {step === "zone" ? (
-          <section className="grid gap-5">
-            <StepHeading icon={<MapPin size={22} weight="duotone" />} title="Zona" />
             <div className="grid gap-2">
-              {restaurant.zones.map((zone) => (
-                <Button
-                  className="justify-start"
-                  key={zone.id}
-                  variant={zoneId === zone.id ? "primary" : "secondary"}
-                  onClick={() => setParam("zoneId", zone.id)}
-                >
-                  {zone.name}
-                </Button>
+              {c.trust.map((item) => (
+                <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]" key={item}>
+                  <ShieldCheck size={15} weight="duotone" className="text-[var(--accent)]" />
+                  {item}
+                </div>
               ))}
             </div>
-          </section>
-        ) : null}
+          </div>
+        </aside>
 
-        {step === "details" ? (
-          <section className="grid gap-4">
-            <StepHeading icon={<UsersThree size={22} weight="duotone" />} title="Tus datos" />
-            <Field label="Nombre">
-              <input className={inputClassName} value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} />
-            </Field>
-            <Field label="Email">
-              <input className={inputClassName} type="email" value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} />
-            </Field>
-            <Field label="Telefono">
-              <input className={inputClassName} inputMode="tel" value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} />
-            </Field>
-          </section>
-        ) : null}
-
-        {step === "requests" ? (
-          <section className="grid gap-5">
-            <StepHeading icon={<CheckCircle size={22} weight="duotone" />} title="Requerimientos" />
-            <Field label="Opcional">
-              <textarea className={`${inputClassName} min-h-32 py-3`} value={specialRequests} onChange={(event) => setSpecialRequests(event.target.value)} />
-            </Field>
-          </section>
-        ) : null}
-
-        {step === "confirm" ? (
-          <section className="grid gap-4">
-            <StepHeading icon={<CheckCircle size={22} weight="duotone" />} title="Confirmacion" />
-            {createReservation.data ? (
-              <div className="rounded-md border border-[var(--border)] bg-[var(--muted)] p-4">
-                <p className="font-semibold">Reserva confirmada</p>
-                <p className="mt-1 text-sm text-[var(--muted-foreground)]">Codigo: {createReservation.data.reservation.id}</p>
+        <section className="grid content-between">
+          <header className="border-b border-[var(--border)] px-4 py-4 sm:px-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">
+                  {c.stepWord} {currentIndex + 1} / {steps.length}
+                </p>
+                <h2 className="mt-1 text-3xl font-semibold leading-tight">{c.shellKicker}</h2>
               </div>
+              <div className="flex gap-1 pt-2">
+                {steps.map((item, index) => (
+                  <span
+                    aria-label={c[item]}
+                    className={`h-1.5 rounded-full transition-all duration-500 ${index <= currentIndex ? "w-8 bg-[var(--accent)]" : "w-3 bg-[var(--muted)]"}`}
+                    key={item}
+                  />
+                ))}
+              </div>
+            </div>
+          </header>
+
+          <div className="grid gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[1fr_18rem] lg:py-8">
+            <div className="min-h-[28rem]">
+              <StepContent
+                availability={availability}
+                c={c}
+                createReservation={createReservation}
+                customer={customer}
+                date={date}
+                emailValid={emailValid}
+                initialDate={initialDate}
+                locale={locale}
+                nameValid={nameValid}
+                needsZone={needsZone}
+                partySize={partySize}
+                phoneValid={phoneValid}
+                restaurant={restaurant}
+                selectedSlot={selectedSlot}
+                selectedZone={selectedZone}
+                setCustomer={setCustomer}
+                setParam={setParam}
+                setParams={setParams}
+                setSpecialRequests={setSpecialRequests}
+                specialRequests={specialRequests}
+                step={step}
+                time={time}
+                zoneId={zoneId}
+              />
+            </div>
+
+            <aside className="grid content-start gap-3 rounded-[var(--radius-lg)] bg-[color-mix(in_srgb,var(--muted)_46%,transparent)] p-4">
+              <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">{c.summary}</p>
+              <SummaryItem icon={<UsersThree size={17} weight="duotone" />} label={c.party} value={String(partySize)} />
+              <SummaryItem icon={<CalendarDots size={17} weight="duotone" />} label={c.date} value={DateTime.fromISO(date).setLocale(locale).toFormat("dd LLL")} />
+              <SummaryItem icon={<Clock size={17} weight="duotone" />} label={c.time} value={selectedTimeLabel ?? "-"} />
+              <SummaryItem icon={<MapPin size={17} weight="duotone" />} label={c.zone} value={selectedZone?.name ?? c.anyZone} />
+              <SummaryItem icon={<ForkKnife size={17} weight="duotone" />} label={c.service} value={selectedService?.name ?? "-"} />
+            </aside>
+          </div>
+
+          <footer className="flex items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-4 sm:px-6">
+            <Button disabled={currentIndex === 0 || createReservation.isPending} variant="ghost" onClick={() => go(prevStep())}>
+              <CaretLeft size={18} weight="bold" />
+              {c.back}
+            </Button>
+            {step === "confirm" ? (
+              createReservation.data ? (
+                <Button variant="secondary" onClick={() => go("time")}>
+                  {c.editSelection}
+                </Button>
+              ) : (
+                <Button
+                  disabled={!time || !nameValid || !phoneValid || !emailValid || createReservation.isPending || (needsZone && !zoneId)}
+                  onClick={() => createReservation.mutate()}
+                >
+                  <CheckCircle size={18} weight="bold" />
+                  {createReservation.isPending ? c.confirming : c.complete}
+                </Button>
+              )
             ) : (
-              <div className="grid gap-3 text-sm">
-                <Summary label="Comensales" value={String(partySize)} />
-                <Summary label="Fecha" value={date} />
-                <Summary label="Horario" value={time ? DateTime.fromISO(time).setZone(restaurant.timezone).toFormat("HH:mm") : "-"} />
-                <Summary label="Zona" value={restaurant.zones.find((zone) => zone.id === zoneId)?.name ?? "Cualquier zona"} />
-                {createReservation.error ? <p className="text-[var(--danger)]">{createReservation.error.message}</p> : null}
-              </div>
+              <Button disabled={!canProceed || createReservation.isPending} onClick={() => go(nextStep())}>
+                {c.next}
+                <CaretRight size={18} weight="bold" />
+              </Button>
             )}
-          </section>
-        ) : null}
-      </div>
-
-      <div className="flex items-center justify-between gap-2 border-t border-[var(--border)] px-4 py-4 sm:px-6">
-        <Button disabled={currentIndex === 0 || createReservation.isPending} variant="ghost" onClick={() => go(steps[currentIndex - 1])}>
-          <CaretLeft size={18} weight="bold" />
-          Atras
-        </Button>
-        {step === "confirm" && !createReservation.data ? (
-          <Button
-            disabled={!time || !customer.name || !customer.phone || createReservation.isPending || (needsZone && !zoneId)}
-            onClick={() => createReservation.mutate()}
-          >
-            <CheckCircle size={18} weight="bold" />
-            {createReservation.isPending ? "Confirmando..." : "Confirmar"}
-          </Button>
-        ) : step === "confirm" ? null : (
-          <Button
-            disabled={
-              (step === "time" && !selectedSlot) ||
-              (step === "zone" && needsZone && !zoneId) ||
-              (step === "details" && (!customer.name || !customer.phone))
-            }
-            onClick={() => {
-              if (step === "time" && !needsZone) go("details");
-              else go(steps[currentIndex + 1]);
-            }}
-          >
-            Siguiente
-            <CaretRight size={18} weight="bold" />
-          </Button>
-        )}
+          </footer>
+        </section>
       </div>
     </Panel>
   );
 }
 
-function StepHeading({ icon, title }: { icon: React.ReactNode; title: string }) {
+function StepContent(props: {
+  availability: ReturnType<typeof useQuery<AvailabilityResponse>>;
+  c: (typeof copy)[Locale];
+  createReservation: ReturnType<typeof useMutation<ReservationResponse, Error, void>>;
+  customer: { name: string; email: string; phone: string };
+  date: string;
+  emailValid: boolean;
+  initialDate: string;
+  locale: Locale;
+  nameValid: boolean;
+  needsZone: boolean;
+  partySize: number;
+  phoneValid: boolean;
+  restaurant: PublicRestaurant;
+  selectedSlot?: { time: string; serviceId: string };
+  selectedZone?: { id: string; name: string };
+  setCustomer: (value: { name: string; email: string; phone: string }) => void;
+  setParam: (key: string, value: string | null) => void;
+  setParams: (values: Record<string, string | null>) => void;
+  setSpecialRequests: (value: string) => void;
+  specialRequests: string;
+  step: Step;
+  time: string | null;
+  zoneId: string | null;
+}) {
+  const {
+    availability,
+    c,
+    createReservation,
+    customer,
+    date,
+    emailValid,
+    initialDate,
+    locale,
+    nameValid,
+    partySize,
+    phoneValid,
+    restaurant,
+    setCustomer,
+    setParam,
+    setParams,
+    setSpecialRequests,
+    specialRequests,
+    step,
+    time,
+    zoneId
+  } = props;
+
+  if (step === "party") {
+    return (
+      <StepFrame body={c.partyBody} icon={<UsersThree size={24} weight="duotone" />} title={c.partyTitle}>
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+            <button
+              className={`grid aspect-square place-items-center rounded-[var(--radius-md)] border text-2xl font-semibold transition-all duration-500 ease-[var(--ease-press)] ${
+                partySize === value
+                  ? "border-transparent bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[0_16px_34px_color-mix(in_srgb,var(--accent)_25%,transparent)]"
+                  : "border-[var(--border)] bg-[var(--card-raised)] hover:-translate-y-0.5 hover:border-[var(--border-strong)]"
+              }`}
+              key={value}
+              onClick={() => setParam("party", String(value))}
+              type="button"
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+      </StepFrame>
+    );
+  }
+
+  if (step === "date") {
+    return (
+      <StepFrame body={c.dateBody} icon={<CalendarDots size={24} weight="duotone" />} title={c.dateTitle}>
+        <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+          <Field label={c.date}>
+            <input className={inputClassName} min={initialDate} type="date" value={date} onChange={(event) => setParam("date", event.target.value)} />
+          </Field>
+          <Badge>{restaurant.timezone}</Badge>
+        </div>
+        <QuickDates initialDate={initialDate} locale={locale} setDate={(value) => setParam("date", value)} />
+      </StepFrame>
+    );
+  }
+
+  if (step === "time") {
+    return (
+      <StepFrame body={c.timeBody} icon={<Clock size={24} weight="duotone" />} title={c.timeTitle}>
+        {availability.isLoading ? (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {Array.from({ length: 9 }).map((_, index) => (
+              <Skeleton className="h-14" key={index} />
+            ))}
+          </div>
+        ) : null}
+        {availability.isError ? (
+          <EmptyState
+            title={c.errorSlots}
+            description={c.unavailable}
+            action={
+              <Button variant="secondary" onClick={() => availability.refetch()}>
+                <WarningCircle size={18} weight="duotone" />
+                {c.retry}
+              </Button>
+            }
+          />
+        ) : null}
+        {!availability.isLoading && !availability.isError && availability.data?.slots.length === 0 ? (
+          <EmptyState title={c.noSlotsTitle} description={c.noSlotsBody} />
+        ) : null}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {availability.data?.slots.map((slot) => {
+            const local = DateTime.fromISO(slot.time).setZone(restaurant.timezone);
+            const service = restaurant.services.find((item) => item.id === slot.serviceId);
+            const active = time === slot.time;
+            return (
+              <button
+                className={`grid gap-1 rounded-[var(--radius-md)] border px-4 py-3 text-left transition-all duration-500 ease-[var(--ease-press)] ${
+                  active
+                    ? "border-transparent bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[0_16px_34px_color-mix(in_srgb,var(--accent)_25%,transparent)]"
+                    : "border-[var(--border)] bg-[var(--card-raised)] hover:-translate-y-0.5 hover:border-[var(--border-strong)]"
+                }`}
+                key={slot.time}
+                onClick={() => setParams({ time: slot.time, serviceId: slot.serviceId })}
+                type="button"
+              >
+                <span className="font-mono text-lg font-semibold">{local.toFormat("HH:mm")}</span>
+                <span className={active ? "text-xs opacity-80" : "text-xs text-[var(--muted-foreground)]"}>{service?.name ?? c.service}</span>
+              </button>
+            );
+          })}
+        </div>
+      </StepFrame>
+    );
+  }
+
+  if (step === "zone") {
+    return (
+      <StepFrame body={c.zoneBody} icon={<MapPin size={24} weight="duotone" />} title={c.zoneTitle}>
+        <div className="grid gap-2">
+          <button
+            className={`rounded-[var(--radius-md)] border px-4 py-4 text-left transition-all duration-500 ease-[var(--ease-press)] ${
+              !zoneId ? "border-transparent bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card-raised)] hover:border-[var(--border-strong)]"
+            }`}
+            onClick={() => setParam("zoneId", null)}
+            type="button"
+          >
+            <span className="font-semibold">{c.noPreference}</span>
+            <span className="mt-1 block text-sm opacity-75">{c.anyZone}</span>
+          </button>
+          {restaurant.zones.map((zone) => (
+            <button
+              className={`rounded-[var(--radius-md)] border px-4 py-4 text-left transition-all duration-500 ease-[var(--ease-press)] ${
+                zoneId === zone.id
+                  ? "border-transparent bg-[var(--accent)] text-[var(--accent-foreground)]"
+                  : "border-[var(--border)] bg-[var(--card-raised)] hover:border-[var(--border-strong)]"
+              }`}
+              key={zone.id}
+              onClick={() => setParam("zoneId", zone.id)}
+              type="button"
+            >
+              <span className="font-semibold">{zone.name}</span>
+              <span className="mt-1 block text-sm opacity-75">{zoneId === zone.id ? c.selected : c.zone}</span>
+            </button>
+          ))}
+        </div>
+      </StepFrame>
+    );
+  }
+
+  if (step === "details") {
+    return (
+      <StepFrame body={c.detailsBody} icon={<User size={24} weight="duotone" />} title={c.detailsTitle}>
+        <div className="grid gap-4">
+          <Field hint={!nameValid && customer.name ? c.requiredName : undefined} label={c.name}>
+            <input
+              className={inputClassName}
+              value={customer.name}
+              onChange={(event) => setCustomer({ ...customer, name: event.target.value })}
+            />
+          </Field>
+          <Field hint={c.optionalEmail} label={c.email}>
+            <input
+              className={inputClassName}
+              type="email"
+              value={customer.email}
+              onChange={(event) => setCustomer({ ...customer, email: event.target.value })}
+            />
+          </Field>
+          {!emailValid ? <p className="text-sm text-[var(--danger)]">{c.invalidEmail}</p> : null}
+          <Field hint={!phoneValid && customer.phone ? c.requiredPhone : undefined} label={c.phone}>
+            <input
+              className={inputClassName}
+              inputMode="tel"
+              value={customer.phone}
+              onChange={(event) => setCustomer({ ...customer, phone: event.target.value })}
+            />
+          </Field>
+        </div>
+      </StepFrame>
+    );
+  }
+
+  if (step === "requests") {
+    return (
+      <StepFrame body={c.requestsBody} icon={<NotePencil size={24} weight="duotone" />} title={c.requestsTitle}>
+        <Field label={c.specialRequests}>
+          <textarea
+            className={`${inputClassName} min-h-40 py-3`}
+            value={specialRequests}
+            onChange={(event) => setSpecialRequests(event.target.value)}
+          />
+        </Field>
+      </StepFrame>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-3">
-      <div className="grid h-11 w-11 place-items-center rounded-[var(--radius-sm)] bg-[var(--muted)] text-[var(--accent)]">{icon}</div>
-      <h3 className="text-2xl font-semibold">{title}</h3>
+    <StepFrame body={createReservation.data ? c.confirmedBody : c.confirmBody} icon={<CheckCircle size={24} weight="duotone" />} title={createReservation.data ? c.confirmedTitle : c.confirmTitle}>
+      {createReservation.data ? (
+        <div className="grid gap-4">
+          <div className="rounded-[var(--radius-lg)] bg-[color-mix(in_srgb,var(--success)_14%,var(--card-raised))] p-5">
+            <p className="text-sm font-semibold text-[var(--success)]">{c.reservationCode}</p>
+            <p className="mt-2 break-all font-mono text-sm">{createReservation.data.reservation.id}</p>
+          </div>
+          <a className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] px-4 text-sm font-semibold" href={googleCalendarUrl(restaurant, createReservation.data.reservation)} rel="noreferrer" target="_blank">
+            <CalendarDots size={18} weight="duotone" />
+            <span className="ml-2">{c.calendar}</span>
+          </a>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          <SummaryRow label={c.party} value={String(props.partySize)} />
+          <SummaryRow label={c.date} value={DateTime.fromISO(props.date).setLocale(props.locale).toFormat("DDDD")} />
+          <SummaryRow label={c.time} value={props.time ? DateTime.fromISO(props.time).setZone(props.restaurant.timezone).toFormat("HH:mm") : "-"} />
+          <SummaryRow label={c.zone} value={props.selectedZone?.name ?? c.anyZone} />
+          {createReservation.error ? (
+            <div className="rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--danger)_10%,var(--card-raised))] p-4 text-sm text-[var(--danger)]">
+              {createReservation.error.message}
+            </div>
+          ) : null}
+        </div>
+      )}
+    </StepFrame>
+  );
+}
+
+function StepFrame({ body, children, icon, title }: { body: string; children: React.ReactNode; icon: React.ReactNode; title: string }) {
+  return (
+    <section className="reveal-in grid gap-6">
+      <div className="grid gap-3">
+        <div className="grid h-12 w-12 place-items-center rounded-[var(--radius-sm)] bg-[var(--muted)] text-[var(--accent)]">{icon}</div>
+        <div>
+          <h3 className="text-4xl font-semibold leading-tight">{title}</h3>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">{body}</p>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function QuickDates({
+  initialDate,
+  locale,
+  setDate
+}: {
+  initialDate: string;
+  locale: Locale;
+  setDate: (value: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {[0, 1, 2].map((offset) => {
+        const date = DateTime.fromISO(initialDate).plus({ days: offset });
+        return (
+          <button
+            className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card-raised)] px-3 py-3 text-left transition-all duration-500 ease-[var(--ease-press)] hover:-translate-y-0.5 hover:border-[var(--border-strong)]"
+            key={offset}
+            onClick={() => setDate(date.toISODate() ?? initialDate)}
+            type="button"
+          >
+            <span className="block font-mono text-sm">{date.setLocale(locale).toFormat("dd LLL")}</span>
+            <span className="mt-1 block text-xs text-[var(--muted-foreground)]">{date.setLocale(locale).toFormat("ccc")}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function Summary({ label, value }: { label: string; value: string }) {
+function SummaryItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-md border border-[var(--border)] bg-white px-3 py-2">
+    <div className="grid grid-cols-[1.75rem_1fr] gap-2 rounded-[var(--radius-sm)] bg-[var(--card-raised)] p-3">
+      <span className="text-[var(--accent)]">{icon}</span>
+      <span>
+        <span className="block text-xs text-[var(--muted-foreground)]">{label}</span>
+        <span className="mt-0.5 block text-sm font-semibold">{value}</span>
+      </span>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card-raised)] px-3 py-3 text-sm">
       <span className="text-[var(--muted-foreground)]">{label}</span>
-      <span className="font-medium">{value}</span>
+      <span className="text-right font-semibold">{value}</span>
     </div>
   );
 }
