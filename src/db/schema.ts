@@ -312,6 +312,54 @@ export const notification = pgTable(
   ]
 );
 
+export const whatsappConversation = pgTable(
+  "whatsapp_conversation",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    restaurantId: uuid("restaurant_id")
+      .notNull()
+      .references(() => restaurant.id, { onDelete: "cascade" }),
+    customerId: uuid("customer_id").references(() => customer.id, { onDelete: "set null" }),
+    phone: text("phone").notNull(),
+    state: jsonb("state").notNull().default(sql`'{}'::jsonb`),
+    status: text("status").notNull().default("active"),
+    lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    uniqueIndex("whatsapp_conversation_restaurant_phone_key").on(t.restaurantId, t.phone),
+    index("idx_whatsapp_conversation_customer").on(t.customerId),
+    check("whatsapp_conversation_status_chk", sql`${t.status} IN ('active', 'closed')`)
+  ]
+);
+
+export const whatsappMessage = pgTable(
+  "whatsapp_message",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => whatsappConversation.id, { onDelete: "cascade" }),
+    restaurantId: uuid("restaurant_id")
+      .notNull()
+      .references(() => restaurant.id, { onDelete: "cascade" }),
+    direction: text("direction").notNull(),
+    metaMessageId: text("meta_message_id"),
+    phone: text("phone").notNull(),
+    body: text("body"),
+    messageType: text("message_type").notNull().default("text"),
+    raw: jsonb("raw").notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    index("idx_whatsapp_message_conversation").on(t.conversationId, t.createdAt),
+    index("idx_whatsapp_message_restaurant").on(t.restaurantId, t.createdAt),
+    uniqueIndex("whatsapp_message_meta_id_key").on(t.metaMessageId).where(sql`${t.metaMessageId} IS NOT NULL`),
+    check("whatsapp_message_direction_chk", sql`${t.direction} IN ('inbound', 'outbound')`)
+  ]
+);
+
 export const waitlistEntry = pgTable(
   "waitlist_entry",
   {
@@ -434,6 +482,8 @@ export type Service = typeof service.$inferSelect;
 export type Shift = typeof shift.$inferSelect;
 export type Reservation = typeof reservation.$inferSelect;
 export type Customer = typeof customer.$inferSelect;
+export type WhatsappConversation = typeof whatsappConversation.$inferSelect;
+export type WhatsappMessage = typeof whatsappMessage.$inferSelect;
 export type WaitlistEntry = typeof waitlistEntry.$inferSelect;
 export type BillingSubscription = typeof billingSubscription.$inferSelect;
 export type SuperAdminUser = typeof superAdminUser.$inferSelect;

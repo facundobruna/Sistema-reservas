@@ -1,7 +1,9 @@
 import { DateTime } from "luxon";
 import { PgBoss, type Job } from "pg-boss";
 import { getPool } from "@/lib/db";
+import { createDinerToken } from "@/lib/auth";
 import { getEmailSender } from "@/lib/email";
+import { getWhatsAppSender } from "@/lib/whatsapp";
 
 const JOB_NAME = "notification.send";
 
@@ -28,6 +30,12 @@ function reminderHours(settings: Record<string, unknown>) {
   return typeof value === "number" && value > 0 ? value : 4;
 }
 
+function whatsappNotificationsEnabled(settings: Record<string, unknown>) {
+  if (process.env.WHATSAPP_ENABLE_NOTIFICATIONS === "true") return true;
+  const whatsapp = settings.whatsapp as Record<string, unknown> | undefined;
+  return whatsapp?.enabled === true;
+}
+
 export async function scheduleReservationNotifications(
   reservationId: string,
   restaurantSettings: Record<string, unknown>,
@@ -36,11 +44,19 @@ export async function scheduleReservationNotifications(
   const pool = getPool();
   const now = DateTime.utc();
   const reminderAt = startsAt.minus({ hours: reminderHours(restaurantSettings) }).toUTC();
+  const values = [
+    `($1, 'confirmation', 'email', now())`,
+    `($1, 'reminder', 'email', GREATEST($2::timestamptz, now()))`
+  ];
+  if (whatsappNotificationsEnabled(restaurantSettings)) {
+    values.push(
+      `($1, 'confirmation', 'whatsapp', now())`,
+      `($1, 'reminder', 'whatsapp', GREATEST($2::timestamptz, now()))`
+    );
+  }
   const rows = await pool.query<{ id: string; scheduled_for: Date }>(
     `INSERT INTO notification (reservation_id, type, channel, scheduled_for)
-     VALUES
-       ($1, 'confirmation', 'email', now()),
-       ($1, 'reminder', 'email', GREATEST($2::timestamptz, now()))
+     VALUES ${values.join(", ")}
      RETURNING id, scheduled_for`,
     [reservationId, (reminderAt > now ? reminderAt : now).toISO()]
   );
@@ -50,19 +66,25 @@ export async function scheduleReservationNotifications(
 
 export async function processDueNotifications(limit = 25) {
   const pool = getPool();
-  const sender = getEmailSender();
+  const emailSender = getEmailSender();
+  const whatsappSender = getWhatsAppSender();
   const due = await pool.query<{
     id: string;
     type: "confirmation" | "reminder";
+    channel: "email" | "whatsapp";
     reservation_id: string;
+    customer_id: string;
     customer_email: string | null;
+    customer_phone: string;
     customer_name: string | null;
     restaurant_name: string;
+    restaurant_slug: string;
     starts_at: Date;
     timezone: string;
   }>(
-    `SELECT n.id, n.type, n.reservation_id, c.email AS customer_email, c.name AS customer_name,
-            rest.name AS restaurant_name, r.starts_at, rest.timezone
+    `SELECT n.id, n.type, n.channel, n.reservation_id, c.id AS customer_id,
+            c.email AS customer_email, c.phone AS customer_phone, c.name AS customer_name,
+            rest.name AS restaurant_name, rest.slug AS restaurant_slug, r.starts_at, rest.timezone
      FROM notification n
      JOIN reservation r ON r.id = n.reservation_id
      JOIN restaurant rest ON rest.id = r.restaurant_id
@@ -76,7 +98,7 @@ export async function processDueNotifications(limit = 25) {
   const results: Array<{ id: string; status: "sent" | "failed"; error?: string }> = [];
 
   for (const row of due.rows) {
-    if (!row.customer_email) {
+    if (row.channel === "email" && !row.customer_email) {
       await pool.query(
         `UPDATE notification
          SET status = 'failed', last_error = 'customer has no email', attempts = attempts + 1
@@ -98,7 +120,18 @@ export async function processDueNotifications(limit = 25) {
         : `Hola ${row.customer_name ?? ""}, te recordamos tu reserva en ${row.restaurant_name} para ${localStart.toFormat("dd/LL HH:mm")}.`;
 
     try {
-      const sent = await sender.send({ to: row.customer_email, subject, text });
+      const sent =
+        row.channel === "email"
+          ? await emailSender.send({ to: row.customer_email!, subject, text })
+          : await sendWhatsAppNotification({
+              sender: whatsappSender,
+              to: row.customer_phone,
+              type: row.type,
+              text,
+              restaurantName: row.restaurant_name,
+              localStart,
+              manageUrl: reservationManageUrl(row.restaurant_slug, row.reservation_id, row.customer_id)
+            });
       await pool.query(
         `UPDATE notification
          SET status = 'sent', sent_at = now(), provider_message_id = $2, attempts = attempts + 1
@@ -118,6 +151,46 @@ export async function processDueNotifications(limit = 25) {
   }
 
   return results;
+}
+
+function reservationManageUrl(slug: string, reservationId: string, customerId: string) {
+  const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+  const token = createDinerToken({ type: "diner", customerId, reservationId });
+  return `${appUrl}/r/${slug}/reservations/${reservationId}?token=${encodeURIComponent(token)}`;
+}
+
+async function sendWhatsAppNotification(input: {
+  sender: ReturnType<typeof getWhatsAppSender>;
+  to: string;
+  type: "confirmation" | "reminder";
+  text: string;
+  restaurantName: string;
+  localStart: DateTime;
+  manageUrl: string;
+}) {
+  const templateName =
+    input.type === "confirmation"
+      ? process.env.WHATSAPP_TEMPLATE_CONFIRMATION
+      : process.env.WHATSAPP_TEMPLATE_REMINDER;
+  if (templateName) {
+    return input.sender.sendTemplate({
+      to: input.to,
+      name: templateName,
+      languageCode: process.env.WHATSAPP_TEMPLATE_LANGUAGE || "es_AR",
+      components: [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: input.restaurantName },
+            { type: "text", text: input.localStart.toFormat("dd/LL HH:mm") },
+            { type: "text", text: input.manageUrl }
+          ]
+        }
+      ]
+    });
+  }
+
+  return input.sender.sendText({ to: input.to, body: `${input.text}\nGestionar: ${input.manageUrl}` });
 }
 
 export async function registerNotificationWorker() {

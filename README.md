@@ -112,6 +112,8 @@ Para facturacion B2B con Mercado Pago, configurar:
 
 El webhook esperado es `POST /api/v1/mercado-pago/webhook`; en Mercado Pago hay que activar los topicos `subscription_preapproval` y `subscription_authorized_payment`. Sin esas variables, la app sigue funcionando en modo local y la pantalla de facturacion muestra que Mercado Pago esta pendiente.
 
+Para WhatsApp, el webhook es `GET/POST /api/v1/whatsapp/webhook`. En local `WHATSAPP_PROVIDER=console` loguea respuestas sin llamar a Meta; en produccion usar `WHATSAPP_PROVIDER=meta`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` y `WHATSAPP_APP_SECRET`. Las plantillas transaccionales sugeridas estan documentadas en `docs/whatsapp.md`.
+
 ## Alcance del MVP
 
-Incluye reserva web, panel de configuracion, agenda, analitica del restaurante, super-admin interno, onboarding self-serve, facturacion B2B con Mercado Pago, motor anti doble-booking con `EXCLUDE`, notificaciones por email y embed por iframe/script. No incluye pagos o senas al comensal ni WhatsApp.
+Incluye reserva web, reserva conversacional por WhatsApp, panel de configuracion, agenda, analitica del restaurante, super-admin interno, onboarding self-serve, facturacion B2B con Mercado Pago, motor anti doble-booking con `EXCLUDE`, notificaciones por email/WhatsApp y embed por iframe/script. No incluye pagos o senas al comensal.

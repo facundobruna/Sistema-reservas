@@ -14,3 +14,4 @@
 - 2026-05-31: Restaurant analytics defines occupancy as booked cover-minutes divided by available cover-minutes from active mesas and configured shifts; this keeps the metric useful without adding a separate capacity model.
 - 2026-05-31: Super-admin accounts live in their own table and can bootstrap the first user from env vars on first login, keeping internal access separate from restaurant staff accounts.
 - 2026-05-31: Overbooking is applied as extra pacing capacity per shift, not as table double-booking; the `reservation_mesa` exclusion constraint remains the hard inventory guarantee.
+- 2026-05-31: WhatsApp runs through a `console` provider by default and switches to Meta Cloud API with env vars; outbound business-initiated messages use templates when names are configured.
