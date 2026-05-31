@@ -7,3 +7,4 @@
 - 2026-05-30: pg-boss is wired behind `ENABLE_PG_BOSS`; notification rows remain the source of truth and can be processed by the local worker or `/api/v1/jobs/notifications`.
 - 2026-05-31: The product visual direction is editorial hospitality: Fraunces for display, Manrope for UI/body, warm paper neutrals, one restaurant-driven accent token, and Phosphor as the single icon set.
 - 2026-05-31: Dark mode is token-driven via `prefers-color-scheme` first; a manual theme switch can be added later without rewriting components.
+- 2026-05-31: Cookie `secure` follows `AUTH_COOKIE_SECURE` or `APP_URL`; Docker local uses HTTP, so staff and diner sessions must not be marked secure there.

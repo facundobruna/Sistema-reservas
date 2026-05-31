@@ -20,6 +20,16 @@ export type DinerSession = {
 const STAFF_COOKIE = "staff_session";
 const DINER_COOKIE = "diner_session";
 
+function shouldUseSecureCookies() {
+  if (process.env.AUTH_COOKIE_SECURE) {
+    return process.env.AUTH_COOKIE_SECURE === "true";
+  }
+  if (process.env.APP_URL) {
+    return process.env.APP_URL.startsWith("https://");
+  }
+  return process.env.NODE_ENV === "production";
+}
+
 export function createStaffToken(session: StaffSession) {
   return signToken(session, 60 * 60 * 24 * 7);
 }
@@ -33,7 +43,7 @@ export async function setStaffCookie(token: string) {
   store.set(STAFF_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(),
     path: "/",
     maxAge: 60 * 60 * 24 * 7
   });
@@ -49,7 +59,7 @@ export async function setDinerCookie(token: string) {
   store.set(DINER_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(),
     path: "/",
     maxAge: 60 * 60 * 24 * 30
   });

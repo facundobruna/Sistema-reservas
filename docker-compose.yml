@@ -30,6 +30,7 @@ services:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/sistema_reservas
       APP_URL: http://localhost:3000
       AUTH_SECRET: docker-local-change-me-32-characters-minimum
+      AUTH_COOKIE_SECURE: "false"
       STAFF_DEMO_PASSWORD: admin123
       JOBS_SECRET: docker-local-jobs-secret
       EMAIL_FROM: Reservas <reservas@example.com>
