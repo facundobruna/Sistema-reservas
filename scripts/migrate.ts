@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { Pool } from "pg";
 
@@ -19,7 +19,9 @@ async function main() {
     )
   `);
 
-  const migrations = ["0000_initial.sql"];
+  const migrations = (await readdir(join(process.cwd(), "drizzle")))
+    .filter((name) => name.endsWith(".sql"))
+    .sort();
 
   for (const migration of migrations) {
     const existing = await pool.query("SELECT 1 FROM _app_migrations WHERE name = $1", [migration]);

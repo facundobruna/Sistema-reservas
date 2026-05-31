@@ -9,3 +9,5 @@
 - 2026-05-31: Dark mode is token-driven via `prefers-color-scheme` first; a manual theme switch can be added later without rewriting components.
 - 2026-05-31: Cookie `secure` follows `AUTH_COOKIE_SECURE` or `APP_URL`; Docker local uses HTTP, so staff and diner sessions must not be marked secure there.
 - 2026-05-31: Self-serve onboarding creates all-week rolling shifts by default; it favors getting a small restaurant live quickly, with precise day exceptions handled later in configuration.
+- 2026-05-31: Billing limits are enforced on staff operations, not on the public diner booking flow, so restaurant billing never adds payment friction to guests.
+- 2026-05-31: B2B billing uses Mercado Pago subscriptions (`preapproval`) with pending checkout links, matching the local payment stack and avoiding a separate Stripe dependency.

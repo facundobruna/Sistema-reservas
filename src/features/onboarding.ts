@@ -98,6 +98,13 @@ export async function createOnboardingTenant(input: OnboardingInput): Promise<On
     );
     const restaurant = restaurantResult.rows[0];
 
+    await client.query(
+      `INSERT INTO billing_subscription
+         (restaurant_id, plan_key, status, trial_ends_at, monthly_reservation_limit, mesa_limit)
+       VALUES ($1, 'growth', 'trialing', now() + interval '14 days', 1200, 40)`,
+      [restaurant.id]
+    );
+
     const staffResult = await client.query<{ id: string; email: string; name: string }>(
       `INSERT INTO staff_user (restaurant_id, email, name, role, password_hash)
        VALUES ($1, $2, $3, 'owner', $4)

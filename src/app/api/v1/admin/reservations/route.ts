@@ -1,4 +1,5 @@
 import { DateTime } from "luxon";
+import { assertManualReservationLimit } from "@/features/billing";
 import { createReservation } from "@/features/booking";
 import { getRestaurantById } from "@/features/repositories";
 import { requireStaffSession } from "@/lib/auth";
@@ -48,6 +49,16 @@ export async function POST(request: Request) {
     const session = await requireStaffSession(request);
     const restaurant = await getRestaurantById(session.restaurantId);
     if (!restaurant) return errorResponse("not_found", "Restaurant not found", 404);
+    const limit = await assertManualReservationLimit(session.restaurantId);
+    if (!limit.ok) {
+      return errorResponse(
+        limit.reason,
+        limit.reason === "reservation_limit"
+          ? `Monthly reservation limit reached for the current plan (${limit.subscription.monthly_reservation_limit})`
+          : "Billing is not active for this restaurant",
+        402
+      );
+    }
     const body = await parseJson(request, adminReservationSchema);
     const result = await createReservation({ ...body, slug: restaurant.slug, source: "manual" });
     if (!result.ok) return errorResponse("slot_unavailable", "The selected slot is no longer available", 409);

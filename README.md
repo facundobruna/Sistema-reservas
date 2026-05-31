@@ -84,7 +84,7 @@ npm run test        # tests unitarios del motor de disponibilidad
 npm run typecheck   # TypeScript
 npm run lint        # ESLint
 npm run build       # build Next.js
-npm run db:migrate  # ejecuta drizzle/0000_initial.sql
+npm run db:migrate  # ejecuta migraciones pendientes en drizzle/
 npm run db:seed     # crea restaurante demo completo
 npm run worker:notifications
 ```
@@ -94,6 +94,17 @@ npm run worker:notifications
 Ver `.env.example`. En local `EMAIL_PROVIDER=console` loguea emails en la terminal. Para Resend, usar `EMAIL_PROVIDER=resend` y `RESEND_API_KEY`.
 Si corres la app en produccion sobre HTTPS, dejá `AUTH_COOKIE_SECURE=true` o configurá `APP_URL` con `https://`.
 
+Para facturacion B2B con Mercado Pago, configurar:
+
+- `MP_ACCESS_TOKEN`
+- `MP_WEBHOOK_SECRET`
+- `MP_CURRENCY_ID` (por defecto `ARS`)
+- `MP_PLAN_STARTER_AMOUNT`
+- `MP_PLAN_GROWTH_AMOUNT`
+- `MP_PLAN_SCALE_AMOUNT`
+
+El webhook esperado es `POST /api/v1/mercado-pago/webhook`; en Mercado Pago hay que activar los topicos `subscription_preapproval` y `subscription_authorized_payment`. Sin esas variables, la app sigue funcionando en modo local y la pantalla de facturacion muestra que Mercado Pago esta pendiente.
+
 ## Alcance del MVP
 
-Incluye reserva web, panel de configuracion y agenda, motor anti doble-booking con `EXCLUDE`, notificaciones por email y embed por iframe/script. No incluye pagos, senas ni WhatsApp.
+Incluye reserva web, panel de configuracion y agenda, onboarding self-serve, facturacion B2B con Mercado Pago, motor anti doble-booking con `EXCLUDE`, notificaciones por email y embed por iframe/script. No incluye pagos o senas al comensal ni WhatsApp.

@@ -306,6 +306,48 @@ export const notification = pgTable(
   ]
 );
 
+export const billingSubscription = pgTable(
+  "billing_subscription",
+  {
+    restaurantId: uuid("restaurant_id")
+      .primaryKey()
+      .references(() => restaurant.id, { onDelete: "cascade" }),
+    planKey: text("plan_key").notNull().default("growth"),
+    status: text("status").notNull().default("trialing"),
+    mercadoPagoPayerId: text("mercadopago_payer_id"),
+    mercadoPagoPreapprovalId: text("mercadopago_preapproval_id"),
+    mercadoPagoPlanId: text("mercadopago_plan_id"),
+    mercadoPagoPayerEmail: text("mercadopago_payer_email"),
+    mercadoPagoInitPoint: text("mercadopago_init_point"),
+    currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    nextPaymentAt: timestamp("next_payment_at", { withTimezone: true }),
+    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    monthlyReservationLimit: integer("monthly_reservation_limit").notNull().default(1200),
+    mesaLimit: integer("mesa_limit").notNull().default(40),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    uniqueIndex("billing_subscription_preapproval_key")
+      .on(t.mercadoPagoPreapprovalId)
+      .where(sql`${t.mercadoPagoPreapprovalId} IS NOT NULL`),
+    index("idx_billing_subscription_status").on(t.status, t.planKey),
+    check("billing_plan_chk", sql`${t.planKey} IN ('starter', 'growth', 'scale')`),
+    check(
+      "billing_status_chk",
+      sql`${t.status} IN ('trialing', 'pending', 'authorized', 'active', 'paused', 'canceled', 'cancelled', 'inactive', 'finished', 'expired')`
+    )
+  ]
+);
+
+export const mercadoPagoWebhookEvent = pgTable("mercadopago_webhook_event", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+});
+
 export type Restaurant = typeof restaurant.$inferSelect;
 export type Zone = typeof zone.$inferSelect;
 export type Mesa = typeof mesa.$inferSelect;
@@ -314,3 +356,4 @@ export type Service = typeof service.$inferSelect;
 export type Shift = typeof shift.$inferSelect;
 export type Reservation = typeof reservation.$inferSelect;
 export type Customer = typeof customer.$inferSelect;
+export type BillingSubscription = typeof billingSubscription.$inferSelect;

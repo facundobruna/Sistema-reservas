@@ -38,6 +38,12 @@ services:
       ENABLE_PG_BOSS: "false"
       SEED_DEMO: "true"
       RESET_DEMO: "false"
+      MP_ACCESS_TOKEN: ""
+      MP_WEBHOOK_SECRET: ""
+      MP_CURRENCY_ID: ARS
+      MP_PLAN_STARTER_AMOUNT: "29000"
+      MP_PLAN_GROWTH_AMOUNT: "69000"
+      MP_PLAN_SCALE_AMOUNT: "149000"
       PORT: "3000"
     ports:
       - "3000:3000"

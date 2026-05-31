@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Clock,
   ClipboardText,
+  CreditCard,
   ForkKnife,
   GearSix,
   MagnifyingGlass,
@@ -21,6 +22,7 @@ import {
   XCircle
 } from "@phosphor-icons/react";
 import { DateTime } from "luxon";
+import { useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge, EmptyState, Field, Panel, Skeleton, inputClassName } from "@/components/ui/field";
@@ -36,7 +38,26 @@ type Summary = {
   exceptions: Row[];
 };
 
-type Tab = "agenda" | "config" | "customers";
+type Tab = "agenda" | "config" | "customers" | "billing";
+
+type BillingPlan = {
+  key: "starter" | "growth" | "scale";
+  name: string;
+  amount: number;
+  currencyId: string;
+  priceLabel: string;
+  reservationLimit: number;
+  mesaLimit: number;
+  description: string;
+};
+
+type BillingResponse = {
+  subscription: Row;
+  usage: { mesas: number; reservationsThisMonth: number };
+  plans: BillingPlan[];
+  mercadoPagoConfigured: boolean;
+  usable: boolean;
+};
 
 const statuses = ["pending", "confirmed", "seated", "completed", "cancelled", "no_show"] as const;
 type ReservationStatus = (typeof statuses)[number];
@@ -98,8 +119,12 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function AdminApp() {
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<Tab>("agenda");
+  const requestedTab = searchParams.get("tab");
+  const [tab, setTab] = useState<Tab>(
+    requestedTab === "config" || requestedTab === "customers" || requestedTab === "billing" ? requestedTab : "agenda"
+  );
   const [date, setDate] = useState(DateTime.now().toISODate() ?? "");
 
   const summary = useQuery({
@@ -157,6 +182,9 @@ export function AdminApp() {
               <TabButton active={tab === "customers"} icon={<UsersThree size={17} weight="duotone" />} onClick={() => setTab("customers")}>
                 Clientes
               </TabButton>
+              <TabButton active={tab === "billing"} icon={<CreditCard size={17} weight="duotone" />} onClick={() => setTab("billing")}>
+                Facturacion
+              </TabButton>
             </nav>
           </div>
         </header>
@@ -165,11 +193,11 @@ export function AdminApp() {
         {tab === "agenda" && !summary.isLoading ? <Agenda date={date} setDate={setDate} summary={summary.data} /> : null}
         {tab === "config" && !summary.isLoading ? <Config summary={summary.data} refresh={() => summary.refetch()} /> : null}
         {tab === "customers" && !summary.isLoading ? <Customers /> : null}
+        {tab === "billing" && !summary.isLoading ? <Billing /> : null}
       </div>
     </main>
   );
 }
-
 function Login({ onSuccess }: { onSuccess: () => void }) {
   const login = useMutation({
     mutationFn: (body: { restaurantSlug: string; email: string; password: string }) =>
@@ -232,7 +260,6 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
     </main>
   );
 }
-
 function PanelSkeleton() {
   return (
     <Panel className="reveal-in">
@@ -890,6 +917,195 @@ function ExistingList({ items, render }: { items: Row[]; render: (item: Row) => 
         <Badge key={text(item, "id", render(item))}>{render(item)}</Badge>
       ))}
       {items.length > 8 ? <Badge>+{items.length - 8}</Badge> : null}
+    </div>
+  );
+}
+
+function Billing() {
+  const billing = useQuery({
+    queryKey: ["admin-billing"],
+    queryFn: () => api<BillingResponse>("/api/v1/admin/billing")
+  });
+  const checkout = useMutation({
+    mutationFn: (planKey: BillingPlan["key"]) =>
+      api<{ url: string | null }>("/api/v1/admin/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify({ planKey })
+      }),
+    onSuccess: (response) => {
+      if (response.url) window.location.assign(response.url);
+    }
+  });
+  const cancel = useMutation({
+    mutationFn: () => api<{ subscription: Row | null }>("/api/v1/admin/billing/cancel", { method: "POST" }),
+    onSuccess: () => billing.refetch()
+  });
+
+  if (billing.isLoading) {
+    return (
+      <Panel>
+        <div className="grid gap-4 p-5">
+          <Skeleton className="h-32" />
+          <div className="grid gap-3 lg:grid-cols-3">
+            <Skeleton className="h-56" />
+            <Skeleton className="h-56" />
+            <Skeleton className="h-56" />
+          </div>
+        </div>
+      </Panel>
+    );
+  }
+
+  if (billing.isError || !billing.data) {
+    return (
+      <Panel>
+        <div className="p-5">
+          <EmptyState title="No pudimos cargar facturacion" description="Reintentá desde el panel antes de cambiar planes." />
+        </div>
+      </Panel>
+    );
+  }
+
+  const subscription = billing.data.subscription;
+  const currentPlan = text(subscription, "plan_key", "growth");
+  const status = text(subscription, "status", "trialing");
+  const paymentLink = text(subscription, "mercadopago_init_point");
+  const hasMercadoPagoSubscription = Boolean(text(subscription, "mercadopago_preapproval_id"));
+  const paidSubscription = status === "authorized" || status === "active";
+  const mesaLimit = number(subscription, "mesa_limit");
+  const reservationLimit = number(subscription, "monthly_reservation_limit");
+  const mesaPercent = Math.min(100, Math.round((billing.data.usage.mesas / Math.max(1, mesaLimit)) * 100));
+  const reservationPercent = Math.min(
+    100,
+    Math.round((billing.data.usage.reservationsThisMonth / Math.max(1, reservationLimit)) * 100)
+  );
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <section className="grid gap-4">
+        <Panel className="reveal-in">
+          <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:items-start">
+            <div>
+              <Badge className={billing.data.usable ? "text-[var(--success)]" : "text-[var(--danger)]"}>
+                {billing.data.usable ? "Cuenta operativa" : "Facturacion requiere atencion"}
+              </Badge>
+              <h2 className="mt-4 text-4xl font-semibold leading-tight">Plan {currentPlan}</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">
+                La facturacion aplica al restaurante. El flujo del comensal se mantiene limpio y sin pagos.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={!paymentLink} variant="secondary" onClick={() => window.location.assign(paymentLink)}>
+                <CreditCard size={18} weight="bold" />
+                Abrir Mercado Pago
+              </Button>
+              <Button disabled={!hasMercadoPagoSubscription || cancel.isPending} variant="ghost" onClick={() => cancel.mutate()}>
+                <XCircle size={18} weight="bold" />
+                Cancelar cobro
+              </Button>
+              <Button variant="ghost" onClick={() => billing.refetch()}>
+                <ArrowsClockwise size={18} weight="bold" />
+                Actualizar
+              </Button>
+            </div>
+          </div>
+        </Panel>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <UsageCard label="Mesas configuradas" limit={mesaLimit} percent={mesaPercent} value={billing.data.usage.mesas} />
+          <UsageCard label="Reservas del mes" limit={reservationLimit} percent={reservationPercent} value={billing.data.usage.reservationsThisMonth} />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          {billing.data.plans.map((plan) => {
+            const active = plan.key === currentPlan;
+            const disabled = !billing.data.mercadoPagoConfigured || checkout.isPending || (active && paidSubscription);
+            return (
+              <Panel className={active ? "ring-2 ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]" : ""} key={plan.key}>
+                <div className="grid h-full content-between gap-5 p-4 sm:p-5">
+                  <div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-3xl font-semibold">{plan.name}</h3>
+                        <p className="mt-1 font-mono text-sm text-[var(--muted-foreground)]">{plan.priceLabel}</p>
+                      </div>
+                      {active ? <Badge className="text-[var(--accent)]">Actual</Badge> : null}
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-[var(--muted-foreground)]">{plan.description}</p>
+                    <div className="mt-5 grid gap-2">
+                      <Badge>{plan.mesaLimit} mesas</Badge>
+                      <Badge>{plan.reservationLimit} reservas/mes</Badge>
+                    </div>
+                  </div>
+                  <Button
+                    disabled={disabled}
+                    variant={active ? "secondary" : "primary"}
+                    onClick={() => checkout.mutate(plan.key)}
+                  >
+                    <CreditCard size={18} weight="bold" />
+                    {active && paidSubscription ? "Plan activo" : active ? "Activar cobro" : "Elegir plan"}
+                  </Button>
+                  {!billing.data.mercadoPagoConfigured ? (
+                    <p className="text-xs text-[var(--warning)]">Falta configurar Mercado Pago para activar este plan.</p>
+                  ) : null}
+                </div>
+              </Panel>
+            );
+          })}
+        </div>
+      </section>
+
+      <Panel className="reveal-in reveal-delay-2 xl:sticky xl:top-4 xl:self-start">
+        <div className="grid gap-5 p-4 sm:p-5">
+          <div>
+            <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Estado Mercado Pago</p>
+            <h3 className="mt-1 text-2xl font-semibold">{billing.data.mercadoPagoConfigured ? "Conectado" : "Pendiente"}</h3>
+          </div>
+          <div className="grid gap-3 text-sm">
+            <DetailRow label="Estado" value={status} />
+            <DetailRow label="Preapproval" value={text(subscription, "mercadopago_preapproval_id", "-")} />
+            <DetailRow label="Payer" value={text(subscription, "mercadopago_payer_id", "-")} />
+            <DetailRow label="Proximo cobro" value={text(subscription, "next_payment_at", text(subscription, "trial_ends_at", "-"))} />
+          </div>
+          {!billing.data.mercadoPagoConfigured ? (
+            <div className="rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--warning)_12%,var(--card-raised))] p-3 text-sm leading-6 text-[var(--warning)]">
+              Configura MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET para activar suscripciones reales.
+            </div>
+          ) : null}
+          {checkout.error ? <p className="text-sm text-[var(--danger)]">{checkout.error.message}</p> : null}
+          {cancel.error ? <p className="text-sm text-[var(--danger)]">{cancel.error.message}</p> : null}
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function UsageCard({ label, limit, percent, value }: { label: string; limit: number; percent: number; value: number }) {
+  return (
+    <Panel className="reveal-in">
+      <div className="grid gap-4 p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-semibold">{label}</span>
+          <Badge>{percent}%</Badge>
+        </div>
+        <div>
+          <p className="font-mono text-3xl font-semibold tabular-nums">
+            {value} / {limit}
+          </p>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--muted)]">
+            <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${percent}%` }} />
+          </div>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card-raised)] px-3 py-3">
+      <span className="text-[var(--muted-foreground)]">{label}</span>
+      <span className="min-w-0 truncate text-right font-semibold">{value}</span>
     </div>
   );
 }
