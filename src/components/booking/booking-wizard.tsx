@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, MapPin, UsersRound } from "lucide-react";
+import { CalendarDots, CaretLeft, CaretRight, CheckCircle, Clock, MapPin, UsersThree } from "@phosphor-icons/react";
 import { DateTime } from "luxon";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -132,7 +132,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
       <div className="px-4 py-5 sm:px-6">
         {step === "party" ? (
           <section className="grid gap-5">
-            <StepHeading icon={<UsersRound />} title="Comensales" />
+            <StepHeading icon={<UsersThree size={22} weight="duotone" />} title="Comensales" />
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((value) => (
                 <Button
@@ -149,7 +149,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
 
         {step === "date" ? (
           <section className="grid gap-5">
-            <StepHeading icon={<CalendarDays />} title="Fecha" />
+            <StepHeading icon={<CalendarDots size={22} weight="duotone" />} title="Fecha" />
             <Field label="Fecha">
               <input className={inputClassName} min={initialDate} type="date" value={date} onChange={(event) => setParam("date", event.target.value)} />
             </Field>
@@ -158,7 +158,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
 
         {step === "time" ? (
           <section className="grid gap-5">
-            <StepHeading icon={<Clock />} title="Horario" />
+            <StepHeading icon={<Clock size={22} weight="duotone" />} title="Horario" />
             {availability.isLoading ? <p className="text-sm text-[var(--muted-foreground)]">Buscando horarios...</p> : null}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {availability.data?.slots.map((slot) => {
@@ -184,7 +184,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
 
         {step === "zone" ? (
           <section className="grid gap-5">
-            <StepHeading icon={<MapPin />} title="Zona" />
+            <StepHeading icon={<MapPin size={22} weight="duotone" />} title="Zona" />
             <div className="grid gap-2">
               {restaurant.zones.map((zone) => (
                 <Button
@@ -202,7 +202,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
 
         {step === "details" ? (
           <section className="grid gap-4">
-            <StepHeading icon={<UsersRound />} title="Tus datos" />
+            <StepHeading icon={<UsersThree size={22} weight="duotone" />} title="Tus datos" />
             <Field label="Nombre">
               <input className={inputClassName} value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} />
             </Field>
@@ -217,7 +217,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
 
         {step === "requests" ? (
           <section className="grid gap-5">
-            <StepHeading icon={<CheckCircle2 />} title="Requerimientos" />
+            <StepHeading icon={<CheckCircle size={22} weight="duotone" />} title="Requerimientos" />
             <Field label="Opcional">
               <textarea className={`${inputClassName} min-h-32 py-3`} value={specialRequests} onChange={(event) => setSpecialRequests(event.target.value)} />
             </Field>
@@ -226,7 +226,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
 
         {step === "confirm" ? (
           <section className="grid gap-4">
-            <StepHeading icon={<CheckCircle2 />} title="Confirmacion" />
+            <StepHeading icon={<CheckCircle size={22} weight="duotone" />} title="Confirmacion" />
             {createReservation.data ? (
               <div className="rounded-md border border-[var(--border)] bg-[var(--muted)] p-4">
                 <p className="font-semibold">Reserva confirmada</p>
@@ -247,7 +247,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
 
       <div className="flex items-center justify-between gap-2 border-t border-[var(--border)] px-4 py-4 sm:px-6">
         <Button disabled={currentIndex === 0 || createReservation.isPending} variant="ghost" onClick={() => go(steps[currentIndex - 1])}>
-          <ChevronLeft size={18} />
+          <CaretLeft size={18} weight="bold" />
           Atras
         </Button>
         {step === "confirm" && !createReservation.data ? (
@@ -255,7 +255,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
             disabled={!time || !customer.name || !customer.phone || createReservation.isPending || (needsZone && !zoneId)}
             onClick={() => createReservation.mutate()}
           >
-            <CheckCircle2 size={18} />
+            <CheckCircle size={18} weight="bold" />
             {createReservation.isPending ? "Confirmando..." : "Confirmar"}
           </Button>
         ) : step === "confirm" ? null : (
@@ -271,7 +271,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
             }}
           >
             Siguiente
-            <ChevronRight size={18} />
+            <CaretRight size={18} weight="bold" />
           </Button>
         )}
       </div>
@@ -282,7 +282,7 @@ export function BookingWizard({ restaurant }: { restaurant: PublicRestaurant }) 
 function StepHeading({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="grid h-11 w-11 place-items-center rounded-md bg-[var(--muted)] text-[var(--accent)]">{icon}</div>
+      <div className="grid h-11 w-11 place-items-center rounded-[var(--radius-sm)] bg-[var(--muted)] text-[var(--accent)]">{icon}</div>
       <h3 className="text-2xl font-semibold">{title}</h3>
     </div>
   );

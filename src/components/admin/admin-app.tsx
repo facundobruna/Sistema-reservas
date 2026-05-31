@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Check, LogOut, Settings, UsersRound } from "lucide-react";
+import { CalendarDots, Check, GearSix, SignOut, UsersThree } from "@phosphor-icons/react";
 import { DateTime } from "luxon";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ export function AdminApp() {
   if (summary.isError) return <Login onSuccess={() => summary.refetch()} />;
 
   return (
-    <main className="min-h-screen bg-[var(--background)]">
+    <main id="content" className="min-h-screen bg-[var(--background)]">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-white/90 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div>
@@ -63,7 +63,7 @@ export function AdminApp() {
             <h1 className="text-lg font-semibold">Panel del restaurante</h1>
           </div>
           <Button size="sm" variant="ghost" onClick={() => logout.mutate()}>
-            <LogOut size={16} />
+            <SignOut size={16} weight="bold" />
             Salir
           </Button>
         </div>
@@ -71,13 +71,13 @@ export function AdminApp() {
 
       <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5">
         <nav className="flex gap-2 overflow-x-auto">
-          <TabButton active={tab === "agenda"} icon={<CalendarDays size={16} />} onClick={() => setTab("agenda")}>
+          <TabButton active={tab === "agenda"} icon={<CalendarDots size={16} weight="duotone" />} onClick={() => setTab("agenda")}>
             Agenda
           </TabButton>
-          <TabButton active={tab === "config"} icon={<Settings size={16} />} onClick={() => setTab("config")}>
+          <TabButton active={tab === "config"} icon={<GearSix size={16} weight="duotone" />} onClick={() => setTab("config")}>
             Configuracion
           </TabButton>
-          <TabButton active={tab === "customers"} icon={<UsersRound size={16} />} onClick={() => setTab("customers")}>
+          <TabButton active={tab === "customers"} icon={<UsersThree size={16} weight="duotone" />} onClick={() => setTab("customers")}>
             Clientes
           </TabButton>
         </nav>
@@ -108,7 +108,7 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center px-4">
+    <main id="content" className="grid min-h-screen place-items-center px-4">
       <Panel className="w-full max-w-md p-5">
         <h1 className="text-2xl font-semibold">Ingresar al panel</h1>
         <form className="mt-5 grid gap-4" onSubmit={submit}>
@@ -123,7 +123,7 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
           </Field>
           {login.error ? <p className="text-sm text-[var(--danger)]">{login.error.message}</p> : null}
           <Button disabled={login.isPending} type="submit">
-            <Check size={18} />
+            <Check size={18} weight="bold" />
             Ingresar
           </Button>
         </form>

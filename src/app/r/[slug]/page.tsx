@@ -17,6 +17,7 @@ export default async function RestaurantBookingPage({ params }: { params: Promis
 
   return (
     <main
+      id="content"
       className="booking-brand min-h-screen px-4 py-4 sm:px-6"
       style={{ "--restaurant-accent": accent } as CSSProperties}
     >

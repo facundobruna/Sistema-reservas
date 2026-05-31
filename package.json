@@ -18,11 +18,11 @@
     "docker:start": "sh scripts/docker-start.sh"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/postcss": "^4.3.0",
     "@tanstack/react-query": "^5.100.14",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
-    "lucide-react": "^1.17.0",
     "luxon": "^3.7.2",
     "next": "^16.2.6",
     "pg": "^8.16.3",

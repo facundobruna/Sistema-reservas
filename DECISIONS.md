@@ -5,3 +5,5 @@
 - 2026-05-30: Cross-zone seating combos are allowed; when a diner filters by zone, a combo is considered eligible if it contains at least one mesa from that zone.
 - 2026-05-30: Passwordless diner magic links use signed stateless tokens for the MVP instead of a token table, keeping secrets in `AUTH_SECRET`.
 - 2026-05-30: pg-boss is wired behind `ENABLE_PG_BOSS`; notification rows remain the source of truth and can be processed by the local worker or `/api/v1/jobs/notifications`.
+- 2026-05-31: The product visual direction is editorial hospitality: Fraunces for display, Manrope for UI/body, warm paper neutrals, one restaurant-driven accent token, and Phosphor as the single icon set.
+- 2026-05-31: Dark mode is token-driven via `prefers-color-scheme` first; a manual theme switch can be added later without rewriting components.

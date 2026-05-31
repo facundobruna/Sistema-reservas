@@ -12,7 +12,7 @@ export default async function EmbedPage({ params }: { params: Promise<{ slug: st
   const script = `<script async src="${appUrl}/embed/${restaurant.slug}/script"></script>`;
 
   return (
-    <main className="min-h-screen px-5 py-10">
+    <main id="content" className="min-h-screen px-5 py-10">
       <section className="mx-auto grid max-w-3xl gap-5">
         <div>
           <p className="font-mono text-sm text-[var(--muted-foreground)]">Embed</p>

@@ -1,27 +1,32 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Manrope } from "next/font/google";
 import { QueryProvider } from "@/components/query-provider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"]
+const display = Fraunces({
+  variable: "--font-display",
+  subsets: ["latin"],
+  axes: ["SOFT", "WONK", "opsz"],
+  display: "swap"
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const body = Manrope({
+  variable: "--font-body",
   subsets: ["latin"]
 });
 
 export const metadata: Metadata = {
-  title: "Sistema de reservas",
-  description: "Reservas para restaurantes"
+  title: "Mesa Clara",
+  description: "Reservas refinadas para restaurantes operativos"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="es" className={`${display.variable} ${body.variable}`}>
       <body className="antialiased">
+        <a className="skip-link" href="#content">
+          Saltar al contenido
+        </a>
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
