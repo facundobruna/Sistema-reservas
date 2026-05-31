@@ -112,7 +112,7 @@ Para facturacion B2B con Mercado Pago, configurar:
 
 El webhook esperado es `POST /api/v1/mercado-pago/webhook`; en Mercado Pago hay que activar los topicos `subscription_preapproval` y `subscription_authorized_payment`. Sin esas variables, la app sigue funcionando en modo local y la pantalla de facturacion muestra que Mercado Pago esta pendiente.
 
-Para WhatsApp, el webhook es `GET/POST /api/v1/whatsapp/webhook`. En local `WHATSAPP_PROVIDER=console` loguea respuestas sin llamar a Meta; en produccion usar `WHATSAPP_PROVIDER=meta`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` y `WHATSAPP_APP_SECRET`. Las plantillas transaccionales sugeridas estan documentadas en `docs/whatsapp.md`.
+Para WhatsApp, el webhook es `GET/POST /api/v1/whatsapp/webhook`. El bot IA se activa con `OPENAI_API_KEY` y usa `WHATSAPP_AI_MODEL` (`gpt-4o-mini` por defecto) para extraer reservas desde lenguaje natural. En local `WHATSAPP_PROVIDER=console` loguea respuestas sin llamar a Meta; en produccion usar `WHATSAPP_PROVIDER=meta`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` y `WHATSAPP_APP_SECRET`. Las plantillas transaccionales sugeridas estan documentadas en `docs/whatsapp.md`.
 
 ## Alcance del MVP
 

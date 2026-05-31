@@ -1,9 +1,13 @@
-# WhatsApp Cloud API
+# WhatsApp AI + Cloud API
 
-La integracion usa el mismo motor de disponibilidad y reserva que el booking web. En local puede correr con `WHATSAPP_PROVIDER=console`; en produccion usa Meta Cloud API.
+La integracion usa un bot IA para interpretar mensajes naturales y el mismo motor de disponibilidad/reserva que el booking web. En local puede correr con `WHATSAPP_PROVIDER=console`; en produccion usa Meta Cloud API.
 
 ## Variables
 
+- `OPENAI_API_KEY`: API key server-side para activar el bot IA.
+- `OPENAI_BASE_URL`: base URL opcional compatible con OpenAI, por defecto `https://api.openai.com/v1`.
+- `WHATSAPP_AI_PROVIDER`: `openai` para IA o `rules` para forzar el fallback deterministico.
+- `WHATSAPP_AI_MODEL`: modelo para extraccion estructurada, por defecto `gpt-4o-mini`.
 - `WHATSAPP_PROVIDER`: `console` o `meta`.
 - `WHATSAPP_API_VERSION`: version de Graph API, por ejemplo `v23.0`.
 - `WHATSAPP_ACCESS_TOKEN`: token permanente de Meta con permisos de WhatsApp.
@@ -65,7 +69,17 @@ El orden de variables que envia la app es:
 
 ## Flujo conversacional
 
-El bot responde textos simples:
+Con `OPENAI_API_KEY`, el bot interpreta lenguaje natural y extrae datos de reserva con salida estructurada. Ejemplos:
+
+```text
+Somos 4 para manana a la noche, cerca de la ventana.
+Quiero una mesa para 2 el viernes a las 21.
+La segunda opcion, a nombre de Facu.
+```
+
+El modelo devuelve intencion, fecha, cantidad, hora preferida, opcion elegida, nombre y pedidos especiales. La aplicacion valida esos datos contra disponibilidad real antes de crear la reserva.
+
+Si no hay `OPENAI_API_KEY`, el fallback local mantiene el flujo basico:
 
 1. `hola` o `reservar`
 2. cantidad de personas
