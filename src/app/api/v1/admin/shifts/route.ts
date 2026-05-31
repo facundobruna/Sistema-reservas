@@ -30,9 +30,11 @@ export async function POST(request: Request) {
         end_time: body.endTime,
         slot_interval_min: body.slotIntervalMin,
         turn_duration_min: body.turnDurationMin,
+        buffer_min: body.bufferMin,
         seating_mode: body.seatingMode,
         fixed_times: body.fixedTimes ?? null,
-        pacing_cap: body.pacingCap ?? null
+        pacing_cap: body.pacingCap ?? null,
+        overbooking_pct: body.overbookingPct
       },
       casts
     );

@@ -373,7 +373,9 @@ function computeOpenMinutes(range: AnalyticsRange, shifts: ShiftRow[], exception
 function minutesBetween(start: string, end: string) {
   const [startHour = 0, startMinute = 0] = start.split(":").map(Number);
   const [endHour = 0, endMinute = 0] = end.split(":").map(Number);
-  return Math.max(0, endHour * 60 + endMinute - (startHour * 60 + startMinute));
+  const startMinutes = startHour * 60 + startMinute;
+  const endMinutes = endHour * 60 + endMinute;
+  return endMinutes > startMinutes ? endMinutes - startMinutes : 24 * 60 - startMinutes + endMinutes;
 }
 
 function fillDailySeries(range: AnalyticsRange, rows: DailyRow[]) {

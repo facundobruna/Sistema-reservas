@@ -65,8 +65,8 @@ export async function loadAvailabilityContext(restaurantId: string, date: string
   const pool = getPool();
   const day = DateTime.fromISO(date, { zone: timezone });
   const dayOfWeek = day.weekday % 7;
-  const dayStart = day.startOf("day").toUTC().toISO();
-  const dayEnd = day.plus({ days: 1 }).startOf("day").toUTC().toISO();
+  const reservationWindowStart = day.minus({ days: 1 }).startOf("day").toUTC().toISO();
+  const reservationWindowEnd = day.plus({ days: 2 }).startOf("day").toUTC().toISO();
 
   const [shiftRows, unitRows, reservationRows, exceptionRows] = await Promise.all([
     pool.query<{
@@ -77,12 +77,14 @@ export async function loadAvailabilityContext(restaurantId: string, date: string
       end_time: string;
       slot_interval_min: number;
       turn_duration_min: number;
+      buffer_min: number;
       seating_mode: "rolling" | "fixed";
       fixed_times: string[] | null;
       pacing_cap: number | null;
+      overbooking_pct: number;
     }>(
       `SELECT id, service_id, zone_id, start_time::text, end_time::text, slot_interval_min,
-              turn_duration_min, seating_mode, fixed_times::text[], pacing_cap
+              turn_duration_min, buffer_min, seating_mode, fixed_times::text[], pacing_cap, overbooking_pct
        FROM shift
        WHERE restaurant_id = $1 AND day_of_week = $2
        ORDER BY start_time, created_at`,
@@ -112,10 +114,12 @@ export async function loadAvailabilityContext(restaurantId: string, date: string
       id: string;
       starts_at: Date;
       ends_at: Date;
+      blocked_until: Date;
       party_size: number;
       mesa_ids: string[];
     }>(
       `SELECT r.id, r.starts_at, r.ends_at, r.party_size,
+              max(upper(rm.periodo)) AS blocked_until,
               array_agg(rm.mesa_id ORDER BY rm.mesa_id) AS mesa_ids
        FROM reservation r
        JOIN reservation_mesa rm ON rm.reservation_id = r.id
@@ -125,7 +129,7 @@ export async function loadAvailabilityContext(restaurantId: string, date: string
          AND r.ends_at > $2::timestamptz
        GROUP BY r.id
        ORDER BY r.starts_at`,
-      [restaurantId, dayStart, dayEnd]
+      [restaurantId, reservationWindowStart, reservationWindowEnd]
     ),
     pool.query<{
       kind: "closed" | "special_hours";
@@ -149,9 +153,11 @@ export async function loadAvailabilityContext(restaurantId: string, date: string
     endTime: row.end_time,
     slotIntervalMin: row.slot_interval_min,
     turnDurationMin: row.turn_duration_min,
+    bufferMin: row.buffer_min,
     seatingMode: row.seating_mode,
     fixedTimes: row.fixed_times,
-    pacingCap: row.pacing_cap
+    pacingCap: row.pacing_cap,
+    overbookingPct: row.overbooking_pct
   }));
 
   const units: SeatingUnitConfig[] = unitRows.rows.map((row) => ({
@@ -168,6 +174,7 @@ export async function loadAvailabilityContext(restaurantId: string, date: string
     id: row.id,
     startsAt: DateTime.fromJSDate(row.starts_at, { zone: "utc" }).setZone(timezone),
     endsAt: DateTime.fromJSDate(row.ends_at, { zone: "utc" }).setZone(timezone),
+    blockedUntil: DateTime.fromJSDate(row.blocked_until, { zone: "utc" }).setZone(timezone),
     partySize: row.party_size,
     mesaIds: row.mesa_ids
   }));

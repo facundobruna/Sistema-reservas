@@ -64,7 +64,7 @@ export const serviceBodySchema = z.object({
   position: z.coerce.number().int().default(0)
 });
 
-export const shiftBodySchema = z.object({
+const shiftBaseSchema = z.object({
   serviceId: uuidSchema,
   zoneId: uuidSchema.optional().nullable(),
   dayOfWeek: z.coerce.number().int().min(0).max(6),
@@ -72,10 +72,25 @@ export const shiftBodySchema = z.object({
   endTime: timeSchema,
   slotIntervalMin: z.coerce.number().int().positive().default(15),
   turnDurationMin: z.coerce.number().int().positive().default(90),
+  bufferMin: z.coerce.number().int().min(0).max(180).default(0),
   seatingMode: z.enum(["rolling", "fixed"]).default("rolling"),
   fixedTimes: z.array(timeSchema).optional().nullable(),
-  pacingCap: z.coerce.number().int().positive().optional().nullable()
+  pacingCap: z.coerce.number().int().positive().optional().nullable(),
+  overbookingPct: z.coerce.number().int().min(0).max(100).default(0)
 });
+
+export const shiftBodySchema = shiftBaseSchema.refine((value) => value.startTime !== value.endTime, {
+  message: "Shift start and end times must be different",
+  path: ["endTime"]
+});
+
+export const shiftPatchSchema = shiftBaseSchema.partial().refine(
+  (value) => !value.startTime || !value.endTime || value.startTime !== value.endTime,
+  {
+    message: "Shift start and end times must be different",
+    path: ["endTime"]
+  }
+);
 
 export const exceptionBodySchema = z.object({
   date: dateSchema,

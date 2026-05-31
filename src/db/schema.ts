@@ -179,16 +179,20 @@ export const shift = pgTable(
     endTime: time("end_time").notNull(),
     slotIntervalMin: integer("slot_interval_min").notNull().default(15),
     turnDurationMin: integer("turn_duration_min").notNull().default(90),
+    bufferMin: integer("buffer_min").notNull().default(0),
     seatingMode: seatingMode("seating_mode").notNull().default("rolling"),
     fixedTimes: time("fixed_times").array(),
     pacingCap: integer("pacing_cap"),
+    overbookingPct: integer("overbooking_pct").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
   },
   (t) => [
     index("idx_shift_lookup").on(t.restaurantId, t.serviceId, t.dayOfWeek),
     index("idx_shift_zone").on(t.zoneId),
     check("shift_dow_chk", sql`${t.dayOfWeek} BETWEEN 0 AND 6`),
-    check("shift_time_chk", sql`${t.endTime} > ${t.startTime}`)
+    check("shift_time_not_equal_chk", sql`${t.endTime} <> ${t.startTime}`),
+    check("shift_buffer_chk", sql`${t.bufferMin} >= 0`),
+    check("shift_overbooking_chk", sql`${t.overbookingPct} BETWEEN 0 AND 100`)
   ]
 );
 

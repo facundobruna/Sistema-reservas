@@ -13,9 +13,11 @@ const baseShift: ShiftConfig = {
   endTime: "23:00",
   slotIntervalMin: 30,
   turnDurationMin: 90,
+  bufferMin: 0,
   seatingMode: "rolling",
   fixedTimes: null,
-  pacingCap: null
+  pacingCap: null,
+  overbookingPct: 0
 };
 
 const unit = (id: string, maxCapacity: number, mesaIds = [id], zoneIds = ["zone-1"]): SeatingUnitConfig => ({
@@ -105,5 +107,43 @@ describe("computeAvailability", () => {
       ]
     });
     expect(slots.map((slot) => slot.startsAt.toFormat("HH:mm"))).toEqual(["20:00"]);
+  });
+
+  it("supports shifts that continue past midnight", () => {
+    const slots = run({
+      shifts: [
+        {
+          ...baseShift,
+          startTime: "22:00",
+          endTime: "01:00",
+          turnDurationMin: 60,
+          fixedTimes: null
+        }
+      ]
+    });
+    expect(slots.map((slot) => slot.startsAt.toFormat("yyyy-LL-dd HH:mm"))).toEqual([
+      "2026-05-30 22:00",
+      "2026-05-30 22:30",
+      "2026-05-30 23:00",
+      "2026-05-30 23:30",
+      "2026-05-31 00:00"
+    ]);
+  });
+
+  it("uses buffer minutes to block cleanup time between seatings", () => {
+    const slots = run({
+      shifts: [{ ...baseShift, endTime: "23:30", bufferMin: 15 }],
+      reservations: [reservation("20:00", "21:30", ["u2"])]
+    });
+    expect(slots.map((slot) => slot.startsAt.toFormat("HH:mm"))).toEqual(["22:00"]);
+  });
+
+  it("applies overbooking percent to pacing without bypassing table inventory", () => {
+    const slots = run({
+      shifts: [{ ...baseShift, pacingCap: 3, overbookingPct: 50 }],
+      units: [unit("u2", 2), unit("u4", 4, ["m4"])],
+      reservations: [reservation("20:00", "21:30", ["u2"], 2)]
+    });
+    expect(slots.map((slot) => slot.startsAt.toFormat("HH:mm"))).toContain("20:00");
   });
 });

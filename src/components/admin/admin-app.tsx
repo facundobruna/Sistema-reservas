@@ -898,7 +898,7 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
 
           <ConfigForm
             className="lg:col-span-2"
-            description="Define ventanas de disponibilidad, duracion de mesa, intervalos y pacing."
+            description="Define ventanas, cruce de medianoche, limpieza, pacing y sobre-reserva operativa."
             error={create.error}
             pending={create.isPending}
             title="Turnos"
@@ -911,9 +911,11 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
                 endTime: data.get("endTime"),
                 slotIntervalMin: Number(data.get("slotIntervalMin") ?? 30),
                 turnDurationMin: Number(data.get("turnDurationMin") ?? 90),
+                bufferMin: Number(data.get("bufferMin") ?? 0),
                 seatingMode: data.get("seatingMode"),
                 fixedTimes: String(data.get("fixedTimes") || "").split(",").map((item) => item.trim()).filter(Boolean),
-                pacingCap: String(data.get("pacingCap") || "") ? Number(data.get("pacingCap")) : null
+                pacingCap: String(data.get("pacingCap") || "") ? Number(data.get("pacingCap")) : null,
+                overbookingPct: Number(data.get("overbookingPct") ?? 0)
               })
             }
           >
@@ -929,16 +931,30 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
             <div className="grid gap-2 md:grid-cols-4">
               <Field label="Intervalo"><input className={inputClassName} defaultValue={30} name="slotIntervalMin" type="number" /></Field>
               <Field label="Duracion"><input className={inputClassName} defaultValue={90} name="turnDurationMin" type="number" /></Field>
-              <Field label="Pacing"><input className={inputClassName} name="pacingCap" type="number" /></Field>
+              <Field label="Limpieza"><input className={inputClassName} defaultValue={0} min={0} name="bufferMin" type="number" /></Field>
               <Field label="Modo"><select className={inputClassName} name="seatingMode"><option value="rolling">Rolling</option><option value="fixed">Fixed</option></select></Field>
             </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              <Field hint="Cubiertos maximos por ventana. Vacio = sin tope." label="Pacing"><input className={inputClassName} min={1} name="pacingCap" type="number" /></Field>
+              <Field hint="Aumenta el pacing configurado, no permite doble-booking de mesas." label="Overbooking %"><input className={inputClassName} defaultValue={0} max={100} min={0} name="overbookingPct" type="number" /></Field>
+            </div>
             <Field label="Horarios fijos"><input className={inputClassName} name="fixedTimes" placeholder="12:00, 13:30" /></Field>
-            <ExistingList items={summary?.shifts ?? []} render={(shift) => `${dayNames[number(shift, "dayOfWeek")]} ${text(shift, "startTime")} - ${text(shift, "endTime")}`} />
+            <ExistingList
+              items={summary?.shifts ?? []}
+              render={(shift) => {
+                const start = text(shift, "start_time");
+                const end = text(shift, "end_time");
+                const crossesMidnight = end && start && end <= start;
+                const buffer = number(shift, "buffer_min");
+                const overbooking = number(shift, "overbooking_pct");
+                return `${dayNames[number(shift, "day_of_week")]} ${start} - ${end}${crossesMidnight ? " (+1)" : ""} - limpieza ${buffer}m - overbooking ${overbooking}%`;
+              }}
+            />
           </ConfigForm>
 
           <ConfigForm
             className="lg:col-span-2"
-            description="Cierres o ventanas especiales para fechas puntuales."
+            description="Cierres completos o ventanas especiales; el horario especial tambien puede cruzar medianoche."
             error={create.error}
             pending={create.isPending}
             title="Excepciones"
@@ -961,7 +977,16 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
               <Field label="Fin"><input className={inputClassName} name="endTime" type="time" /></Field>
             </div>
             <Field label="Nota"><input className={inputClassName} name="note" /></Field>
-            <ExistingList items={summary?.exceptions ?? []} render={(item) => `${text(item, "date")} - ${text(item, "kind")}`} />
+            <ExistingList
+              items={summary?.exceptions ?? []}
+              render={(item) => {
+                const kind = text(item, "kind") === "closed" ? "Cerrado" : "Horario especial";
+                const start = text(item, "start_time");
+                const end = text(item, "end_time");
+                const crossesMidnight = end && start && end <= start;
+                return `${text(item, "date")} - ${kind}${start && end ? ` ${start}-${end}${crossesMidnight ? " (+1)" : ""}` : ""}`;
+              }}
+            />
           </ConfigForm>
         </div>
       </section>

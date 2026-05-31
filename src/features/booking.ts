@@ -76,7 +76,8 @@ export async function createReservation(input: ReservationInput): Promise<Reserv
     context.units,
     context.reservations,
     slot.startsAt,
-    shift.turnDurationMin
+    shift.turnDurationMin,
+    shift.bufferMin
   );
 
   if (!units.length) return { ok: false, error: "slot_unavailable" };
@@ -91,6 +92,7 @@ export async function createReservation(input: ReservationInput): Promise<Reserv
   const pool = getPool();
   const startsAt = slot.startsAt.toUTC().toISO();
   const endsAt = slot.endsAt.toUTC().toISO();
+  const blockedUntil = slot.endsAt.plus({ minutes: shift.bufferMin }).toUTC().toISO();
   const lockKey = `${restaurant.id}:${customerId}:${startsAt}`;
 
   for (const unit of units) {
@@ -173,7 +175,7 @@ export async function createReservation(input: ReservationInput): Promise<Reserv
         await client.query(
           `INSERT INTO reservation_mesa (reservation_id, mesa_id, periodo)
            VALUES ($1, $2, tstzrange($3::timestamptz, $4::timestamptz, '[)'))`,
-          [reservation.id, mesaId, startsAt, endsAt]
+          [reservation.id, mesaId, startsAt, blockedUntil]
         );
       }
 
