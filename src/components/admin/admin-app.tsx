@@ -4,6 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowsClockwise,
   CalendarDots,
+  ChartBar,
+  ChartLineUp,
+  ChartPieSlice,
   Check,
   CheckCircle,
   Clock,
@@ -38,7 +41,43 @@ type Summary = {
   exceptions: Row[];
 };
 
-type Tab = "agenda" | "config" | "customers" | "billing";
+type Tab = "agenda" | "config" | "customers" | "analytics" | "billing";
+
+type AnalyticsSegment = {
+  label: string;
+  value: number;
+  covers?: number;
+};
+
+type AnalyticsResponse = {
+  range: { from: string; to: string; days: number; timezone: string };
+  totals: {
+    reservations: number;
+    activeReservations: number;
+    covers: number;
+    uniqueCustomers: number;
+    noShows: number;
+    cancellations: number;
+    noShowRate: number;
+    cancellationRate: number;
+    occupancyRate: number;
+    avgTurnMinutes: number;
+  };
+  occupancy: {
+    seatCapacity: number;
+    openHours: number;
+    bookedCoverMinutes: number;
+    availableCoverMinutes: number;
+  };
+  daily: Array<{ date: string; reservations: number; covers: number; noShows: number; cancelled: number }>;
+  statusMix: AnalyticsSegment[];
+  sourceMix: AnalyticsSegment[];
+  customerMix: AnalyticsSegment[];
+  peakHours: Array<{ hour: number; label: string; reservations: number; covers: number }>;
+  topZones: AnalyticsSegment[];
+  topServices: AnalyticsSegment[];
+  topCustomers: Array<{ name: string; phone: string; reservations: number; covers: number; lastVisit: string | null }>;
+};
 
 type BillingPlan = {
   key: "starter" | "growth" | "scale";
@@ -123,7 +162,9 @@ export function AdminApp() {
   const queryClient = useQueryClient();
   const requestedTab = searchParams.get("tab");
   const [tab, setTab] = useState<Tab>(
-    requestedTab === "config" || requestedTab === "customers" || requestedTab === "billing" ? requestedTab : "agenda"
+    requestedTab === "config" || requestedTab === "customers" || requestedTab === "billing" || requestedTab === "analytics"
+      ? requestedTab
+      : "agenda"
   );
   const [date, setDate] = useState(DateTime.now().toISODate() ?? "");
 
@@ -182,6 +223,9 @@ export function AdminApp() {
               <TabButton active={tab === "customers"} icon={<UsersThree size={17} weight="duotone" />} onClick={() => setTab("customers")}>
                 Clientes
               </TabButton>
+              <TabButton active={tab === "analytics"} icon={<ChartBar size={17} weight="duotone" />} onClick={() => setTab("analytics")}>
+                Analitica
+              </TabButton>
               <TabButton active={tab === "billing"} icon={<CreditCard size={17} weight="duotone" />} onClick={() => setTab("billing")}>
                 Facturacion
               </TabButton>
@@ -193,6 +237,7 @@ export function AdminApp() {
         {tab === "agenda" && !summary.isLoading ? <Agenda date={date} setDate={setDate} summary={summary.data} /> : null}
         {tab === "config" && !summary.isLoading ? <Config summary={summary.data} refresh={() => summary.refetch()} /> : null}
         {tab === "customers" && !summary.isLoading ? <Customers /> : null}
+        {tab === "analytics" && !summary.isLoading ? <Analytics summary={summary.data} /> : null}
         {tab === "billing" && !summary.isLoading ? <Billing /> : null}
       </div>
     </main>
@@ -919,6 +964,341 @@ function ExistingList({ items, render }: { items: Row[]; render: (item: Row) => 
       {items.length > 8 ? <Badge>+{items.length - 8}</Badge> : null}
     </div>
   );
+}
+
+function Analytics({ summary }: { summary?: Summary }) {
+  const timezone = text(summary?.restaurant, "timezone", "America/Argentina/Buenos_Aires");
+  const today = DateTime.now().setZone(timezone);
+  const [to, setTo] = useState(today.toISODate() ?? "");
+  const [from, setFrom] = useState(today.minus({ days: 29 }).toISODate() ?? "");
+
+  const analytics = useQuery({
+    queryKey: ["admin-analytics", from, to],
+    queryFn: () => api<AnalyticsResponse>(`/api/v1/admin/analytics?from=${from}&to=${to}`)
+  });
+
+  if (analytics.isLoading) {
+    return (
+      <Panel className="reveal-in">
+        <div className="grid gap-4 p-5">
+          <div className="grid gap-3 sm:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton className="h-24" key={index} />
+            ))}
+          </div>
+          <Skeleton className="h-96" />
+        </div>
+      </Panel>
+    );
+  }
+
+  if (analytics.isError || !analytics.data) {
+    return (
+      <Panel>
+        <div className="p-5">
+          <EmptyState
+            title="No pudimos cargar analitica"
+            description="Reintenta la consulta. Si sigue fallando, la agenda sigue operativa mientras revisas la conexion."
+            action={
+              <Button variant="secondary" onClick={() => analytics.refetch()}>
+                <ArrowsClockwise size={18} weight="bold" />
+                Reintentar
+              </Button>
+            }
+          />
+        </div>
+      </Panel>
+    );
+  }
+
+  const data = analytics.data;
+  const hasReservations = data.totals.reservations > 0;
+
+  return (
+    <div className="grid gap-4">
+      <Panel className="reveal-in">
+        <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div>
+            <Badge className="gap-1 text-[var(--accent)]">
+              <ChartLineUp size={14} weight="duotone" />
+              {data.range.days} dias
+            </Badge>
+            <h2 className="mt-4 text-4xl font-semibold leading-tight">Pulso del restaurante</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">
+              Reservas, ocupacion, canales y recurrencia calculados sobre datos reales del tenant.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <Field label="Desde">
+              <input className={inputClassName} type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+            </Field>
+            <Field label="Hasta">
+              <input className={inputClassName} type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+            </Field>
+            <div className="flex items-end">
+              <Button className="w-full" variant="secondary" onClick={() => analytics.refetch()}>
+                <ArrowsClockwise size={18} weight="bold" />
+                Actualizar
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Panel>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard icon={<CalendarDots size={20} weight="duotone" />} label="Reservas" value={formatInteger(data.totals.reservations)} />
+        <MetricCard icon={<UsersThree size={20} weight="duotone" />} label="Cubiertos" value={formatInteger(data.totals.covers)} />
+        <MetricCard icon={<ChartPieSlice size={20} weight="duotone" />} label="Ocupacion" value={formatPercent(data.totals.occupancyRate)} />
+        <MetricCard icon={<WarningCircle size={20} weight="duotone" />} label="No-show" value={formatPercent(data.totals.noShowRate)} />
+      </div>
+
+      {!hasReservations ? (
+        <Panel className="reveal-in">
+          <div className="p-5">
+            <EmptyState
+              title="Todavia no hay datos en este rango"
+              description="Cuando entren reservas, este tablero va a mostrar tendencias, horarios pico, clientes recurrentes y ocupacion del salon."
+            />
+          </div>
+        </Panel>
+      ) : null}
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <section className="grid gap-4">
+          <Panel className="reveal-in overflow-hidden">
+            <div className="border-b border-[var(--border)] p-4 sm:p-5">
+              <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Tendencia diaria</p>
+              <h3 className="mt-1 text-3xl font-semibold">Reservas y cubiertos</h3>
+            </div>
+            <DailyTrend data={data.daily} />
+          </Panel>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Panel className="reveal-in reveal-delay-1">
+              <div className="grid gap-4 p-4 sm:p-5">
+                <SectionTitle eyebrow="Horas pico" title="Demanda por hora" />
+                <HorizontalBars
+                  emptyLabel="Sin horarios activos en el rango"
+                  items={data.peakHours.map((hour) => ({
+                    label: hour.label,
+                    value: hour.reservations,
+                    meta: `${hour.covers} cubiertos`
+                  }))}
+                />
+              </div>
+            </Panel>
+
+            <Panel className="reveal-in reveal-delay-2">
+              <div className="grid gap-4 p-4 sm:p-5">
+                <SectionTitle eyebrow="Origen" title="Mix de canales" />
+                <HorizontalBars
+                  emptyLabel="Sin canales para mostrar"
+                  items={data.sourceMix.map((source) => ({
+                    label: sourceLabel(source.label),
+                    value: source.value,
+                    meta: `${source.covers ?? 0} cubiertos`
+                  }))}
+                />
+              </div>
+            </Panel>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Panel className="reveal-in">
+              <div className="grid gap-4 p-4 sm:p-5">
+                <SectionTitle eyebrow="Zonas" title="Donde se reserva mas" />
+                <HorizontalBars
+                  emptyLabel="Sin zonas para mostrar"
+                  items={data.topZones.map((zone) => ({
+                    label: zone.label,
+                    value: zone.value,
+                    meta: `${zone.covers ?? 0} cubiertos`
+                  }))}
+                />
+              </div>
+            </Panel>
+
+            <Panel className="reveal-in reveal-delay-1">
+              <div className="grid gap-4 p-4 sm:p-5">
+                <SectionTitle eyebrow="Servicios" title="Turnos mas fuertes" />
+                <HorizontalBars
+                  emptyLabel="Sin servicios para mostrar"
+                  items={data.topServices.map((service) => ({
+                    label: service.label,
+                    value: service.value,
+                    meta: `${service.covers ?? 0} cubiertos`
+                  }))}
+                />
+              </div>
+            </Panel>
+          </div>
+        </section>
+
+        <aside className="grid gap-4 xl:sticky xl:top-4 xl:self-start">
+          <Panel className="reveal-in reveal-delay-1">
+            <div className="grid gap-4 p-4 sm:p-5">
+              <SectionTitle eyebrow="Calidad" title="Salud operativa" />
+              <DetailRow label="Reservas activas" value={formatInteger(data.totals.activeReservations)} />
+              <DetailRow label="Cancelaciones" value={formatPercent(data.totals.cancellationRate)} />
+              <DetailRow label="Clientes unicos" value={formatInteger(data.totals.uniqueCustomers)} />
+              <DetailRow label="Duracion media" value={`${data.totals.avgTurnMinutes} min`} />
+              <DetailRow label="Horas abiertas" value={formatDecimal(data.occupancy.openHours)} />
+              <DetailRow label="Sillas activas" value={formatInteger(data.occupancy.seatCapacity)} />
+            </div>
+          </Panel>
+
+          <Panel className="reveal-in reveal-delay-2">
+            <div className="grid gap-4 p-4 sm:p-5">
+              <SectionTitle eyebrow="Clientes" title="Nuevos vs recurrentes" />
+              <HorizontalBars
+                emptyLabel="Sin clientes activos"
+                items={data.customerMix.map((segment) => ({
+                  label: segment.label,
+                  value: segment.value,
+                  meta: "reservas"
+                }))}
+              />
+            </div>
+          </Panel>
+
+          <Panel className="reveal-in reveal-delay-3">
+            <div className="grid gap-4 p-4 sm:p-5">
+              <SectionTitle eyebrow="Top clientes" title="Mayor frecuencia" />
+              {data.topCustomers.length ? (
+                <div className="grid gap-2">
+                  {data.topCustomers.map((customer) => (
+                    <div
+                      className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card-raised)] p-3"
+                      key={`${customer.phone}-${customer.name}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{customer.name}</p>
+                          <p className="mt-1 text-xs text-[var(--muted-foreground)]">{customer.phone}</p>
+                        </div>
+                        <Badge>{customer.reservations} reservas</Badge>
+                      </div>
+                      <p className="mt-2 text-xs text-[var(--muted-foreground)]">{customer.covers} cubiertos acumulados</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[var(--muted-foreground)]">Sin clientes frecuentes en este rango.</p>
+              )}
+            </div>
+          </Panel>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div>
+      <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">{eyebrow}</p>
+      <h3 className="mt-1 text-2xl font-semibold">{title}</h3>
+    </div>
+  );
+}
+
+function DailyTrend({ data }: { data: AnalyticsResponse["daily"] }) {
+  const max = Math.max(1, ...data.map((row) => Math.max(row.reservations, row.covers)));
+  const labelEvery = Math.max(1, Math.ceil(data.length / 8));
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="grid min-w-[44rem] gap-3 p-4 sm:p-5">
+        <div className="flex h-72 items-end gap-2 rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--muted)_42%,transparent)] p-3">
+          {data.map((row) => {
+            const coversHeight = Math.max(4, (row.covers / max) * 100);
+            const reservationsHeight = Math.max(4, (row.reservations / max) * 100);
+            return (
+              <div
+                className="flex h-full min-w-5 flex-1 items-end justify-center gap-1"
+                key={row.date}
+                title={`${row.date}: ${row.reservations} reservas, ${row.covers} cubiertos`}
+              >
+                <div
+                  className="mx-auto w-full max-w-7 rounded-t-[var(--radius-xs)] bg-[color-mix(in_srgb,var(--accent)_38%,var(--muted))]"
+                  style={{ height: `${coversHeight}%` }}
+                />
+                <div
+                  className="mx-auto w-full max-w-7 rounded-t-[var(--radius-xs)] bg-[var(--accent)]"
+                  style={{ height: `${reservationsHeight}%` }}
+                />
+              </div>
+            );
+          })}
+        </div>
+        <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${data.length}, minmax(1.25rem, 1fr))` }}>
+          {data.map((row, index) => (
+            <span className="truncate text-center font-mono text-[0.65rem] text-[var(--muted-foreground)]" key={row.date}>
+              {index % labelEvery === 0 ? DateTime.fromISO(row.date).toFormat("dd/LL") : ""}
+            </span>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-3 text-xs text-[var(--muted-foreground)]">
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2 w-5 rounded-full bg-[var(--accent)]" /> Reservas
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2 w-5 rounded-full bg-[color-mix(in_srgb,var(--accent)_38%,var(--muted))]" /> Cubiertos
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HorizontalBars({
+  emptyLabel,
+  items
+}: {
+  emptyLabel: string;
+  items: Array<{ label: string; value: number; meta?: string }>;
+}) {
+  const max = Math.max(1, ...items.map((item) => item.value));
+  if (!items.length) return <p className="text-sm text-[var(--muted-foreground)]">{emptyLabel}</p>;
+
+  return (
+    <div className="grid gap-3">
+      {items.map((item) => {
+        const width = Math.max(4, (item.value / max) * 100);
+        return (
+          <div className="grid gap-1" key={item.label}>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate font-semibold">{item.label}</span>
+              <span className="font-mono text-xs text-[var(--muted-foreground)]">{item.value}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-[var(--muted)]">
+              <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${width}%` }} />
+            </div>
+            {item.meta ? <span className="text-xs text-[var(--muted-foreground)]">{item.meta}</span> : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function sourceLabel(source: string) {
+  if (source === "web") return "Web";
+  if (source === "manual") return "Manual";
+  if (source === "whatsapp") return "WhatsApp";
+  return source;
+}
+
+function formatInteger(value: number) {
+  return new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(value);
+}
+
+function formatDecimal(value: number) {
+  return new Intl.NumberFormat("es-AR", { maximumFractionDigits: 1 }).format(value);
+}
+
+function formatPercent(value: number) {
+  return `${formatDecimal(value)}%`;
 }
 
 function Billing() {

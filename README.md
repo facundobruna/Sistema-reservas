@@ -107,4 +107,4 @@ El webhook esperado es `POST /api/v1/mercado-pago/webhook`; en Mercado Pago hay 
 
 ## Alcance del MVP
 
-Incluye reserva web, panel de configuracion y agenda, onboarding self-serve, facturacion B2B con Mercado Pago, motor anti doble-booking con `EXCLUDE`, notificaciones por email y embed por iframe/script. No incluye pagos o senas al comensal ni WhatsApp.
+Incluye reserva web, panel de configuracion, agenda, analitica del restaurante, onboarding self-serve, facturacion B2B con Mercado Pago, motor anti doble-booking con `EXCLUDE`, notificaciones por email y embed por iframe/script. No incluye pagos o senas al comensal ni WhatsApp.
