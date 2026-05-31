@@ -38,7 +38,7 @@ export type ReservationResult =
       };
       dinerToken: string;
     }
-  | { ok: false; error: "restaurant_not_found" | "slot_unavailable" };
+  | { ok: false; error: "restaurant_not_found" | "restaurant_suspended" | "slot_unavailable" };
 
 function sameInstant(left: DateTime, right: DateTime) {
   return left.toUTC().toMillis() === right.toUTC().toMillis();
@@ -47,6 +47,7 @@ function sameInstant(left: DateTime, right: DateTime) {
 export async function createReservation(input: ReservationInput): Promise<ReservationResult> {
   const restaurant = await getRestaurantBySlug(input.slug);
   if (!restaurant) return { ok: false, error: "restaurant_not_found" };
+  if (restaurant.suspendedAt) return { ok: false, error: "restaurant_suspended" };
 
   const requestedStart = DateTime.fromISO(input.time, { setZone: true }).setZone(restaurant.timezone);
   const context = await loadAvailabilityContext(restaurant.id, input.date, restaurant.timezone);

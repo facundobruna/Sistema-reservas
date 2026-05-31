@@ -6,6 +6,7 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
     const { slug } = await context.params;
     const restaurant = await getPublicRestaurant(slug);
     if (!restaurant) return errorResponse("not_found", "Restaurant not found", 404);
+    if (restaurant.suspendedAt) return errorResponse("restaurant_suspended", "Restaurant booking is temporarily unavailable", 423);
     const settings = restaurant.settings;
     return json({
       id: restaurant.id,

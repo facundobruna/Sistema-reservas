@@ -35,6 +35,7 @@ npm run dev
 ```
 
 Abrir `http://localhost:3000/r/demo-bistro` para reservar y `http://localhost:3000/admin` para el panel.
+El super-admin interno queda en `http://localhost:3000/super-admin`.
 Para crear un restaurante nuevo de punta a punta, usar `http://localhost:3000/onboarding`.
 
 Credenciales demo del staff:
@@ -42,6 +43,11 @@ Credenciales demo del staff:
 - Restaurante: `demo-bistro`
 - Email: `owner@demo-bistro.test`
 - Password: valor de `STAFF_DEMO_PASSWORD` o `admin123`
+
+Super-admin local con Docker:
+
+- Email: `owner@mesa-clara.test`
+- Password: `superadmin123`
 
 ## Docker
 
@@ -92,6 +98,7 @@ npm run worker:notifications
 ## Variables de entorno
 
 Ver `.env.example`. En local `EMAIL_PROVIDER=console` loguea emails en la terminal. Para Resend, usar `EMAIL_PROVIDER=resend` y `RESEND_API_KEY`.
+Para habilitar el primer super-admin sin tocar la base, definir `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD` y opcionalmente `SUPER_ADMIN_NAME`; el usuario se crea en el primer login valido.
 Si corres la app en produccion sobre HTTPS, dejá `AUTH_COOKIE_SECURE=true` o configurá `APP_URL` con `https://`.
 
 Para facturacion B2B con Mercado Pago, configurar:
@@ -107,4 +114,4 @@ El webhook esperado es `POST /api/v1/mercado-pago/webhook`; en Mercado Pago hay 
 
 ## Alcance del MVP
 
-Incluye reserva web, panel de configuracion, agenda, analitica del restaurante, onboarding self-serve, facturacion B2B con Mercado Pago, motor anti doble-booking con `EXCLUDE`, notificaciones por email y embed por iframe/script. No incluye pagos o senas al comensal ni WhatsApp.
+Incluye reserva web, panel de configuracion, agenda, analitica del restaurante, super-admin interno, onboarding self-serve, facturacion B2B con Mercado Pago, motor anti doble-booking con `EXCLUDE`, notificaciones por email y embed por iframe/script. No incluye pagos o senas al comensal ni WhatsApp.

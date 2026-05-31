@@ -53,6 +53,8 @@ export const restaurant = pgTable("restaurant", {
   name: text("name").notNull(),
   timezone: text("timezone").notNull().default("America/Argentina/Buenos_Aires"),
   settings: jsonb("settings").notNull().default(sql`'{}'::jsonb`),
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+  suspendedReason: text("suspended_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 });
@@ -348,6 +350,50 @@ export const mercadoPagoWebhookEvent = pgTable("mercadopago_webhook_event", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 });
 
+export const superAdminUser = pgTable(
+  "super_admin_user",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: citext("email").notNull().unique(),
+    name: text("name").notNull(),
+    role: text("role").notNull().default("owner"),
+    passwordHash: text("password_hash").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true })
+  },
+  (t) => [check("super_admin_role_chk", sql`${t.role} IN ('owner', 'support')`)]
+);
+
+export const restaurantFeatureFlag = pgTable(
+  "restaurant_feature_flag",
+  {
+    restaurantId: uuid("restaurant_id")
+      .notNull()
+      .references(() => restaurant.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    enabled: boolean("enabled").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => superAdminUser.id, { onDelete: "set null" })
+  },
+  (t) => [primaryKey({ columns: [t.restaurantId, t.key] }), index("idx_feature_flag_key").on(t.key, t.enabled)]
+);
+
+export const superAdminAuditLog = pgTable(
+  "super_admin_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    superAdminId: uuid("super_admin_id").references(() => superAdminUser.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    restaurantId: uuid("restaurant_id").references(() => restaurant.id, { onDelete: "set null" }),
+    metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    index("idx_super_admin_audit_restaurant").on(t.restaurantId, t.createdAt),
+    index("idx_super_admin_audit_admin").on(t.superAdminId, t.createdAt)
+  ]
+);
+
 export type Restaurant = typeof restaurant.$inferSelect;
 export type Zone = typeof zone.$inferSelect;
 export type Mesa = typeof mesa.$inferSelect;
@@ -357,3 +403,4 @@ export type Shift = typeof shift.$inferSelect;
 export type Reservation = typeof reservation.$inferSelect;
 export type Customer = typeof customer.$inferSelect;
 export type BillingSubscription = typeof billingSubscription.$inferSelect;
+export type SuperAdminUser = typeof superAdminUser.$inferSelect;

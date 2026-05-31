@@ -13,6 +13,8 @@ export type PublicRestaurant = {
   slug: string;
   name: string;
   timezone: string;
+  suspendedAt: Date | null;
+  suspendedReason: string | null;
   settings: Record<string, unknown>;
   zones: Array<{ id: string; name: string; position: number }>;
   services: Array<{ id: string; name: string; position: number }>;
@@ -51,6 +53,8 @@ export async function getPublicRestaurant(slug: string): Promise<PublicRestauran
     slug: restaurant.slug,
     name: restaurant.name,
     timezone: restaurant.timezone,
+    suspendedAt: restaurant.suspendedAt,
+    suspendedReason: restaurant.suspendedReason,
     settings: (restaurant.settings as Record<string, unknown>) ?? {},
     zones,
     services

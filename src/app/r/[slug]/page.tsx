@@ -18,6 +18,25 @@ export default async function RestaurantBookingPage({
   const locale = getLocale(localeParam);
   const restaurant = await getPublicRestaurant(slug);
   if (!restaurant) notFound();
+  if (restaurant.suspendedAt) {
+    return (
+      <main id="content" className="grid min-h-[100dvh] place-items-center px-4 py-8">
+        <section className="surface-shell w-full max-w-2xl">
+          <div className="surface-core p-6 text-center sm:p-8">
+            <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">{restaurant.name}</p>
+            <h1 className="mt-3 text-4xl font-semibold leading-tight">
+              {locale === "en" ? "Booking is temporarily unavailable" : "Las reservas estan temporalmente pausadas"}
+            </h1>
+            <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-[var(--muted-foreground)]">
+              {locale === "en"
+                ? "The restaurant is not accepting online reservations right now. Please contact the venue directly."
+                : "El restaurante no esta tomando reservas online en este momento. Contacta al local directamente."}
+            </p>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   const branding = (restaurant.settings.branding as Record<string, unknown> | undefined) ?? {};
   const accent =

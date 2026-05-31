@@ -38,6 +38,9 @@ services:
       ENABLE_PG_BOSS: "false"
       SEED_DEMO: "true"
       RESET_DEMO: "false"
+      SUPER_ADMIN_EMAIL: owner@mesa-clara.test
+      SUPER_ADMIN_PASSWORD: superadmin123
+      SUPER_ADMIN_NAME: Mesa Clara Owner
       MP_ACCESS_TOKEN: ""
       MP_WEBHOOK_SECRET: ""
       MP_CURRENCY_ID: ARS

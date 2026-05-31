@@ -12,3 +12,4 @@
 - 2026-05-31: Billing limits are enforced on staff operations, not on the public diner booking flow, so restaurant billing never adds payment friction to guests.
 - 2026-05-31: B2B billing uses Mercado Pago subscriptions (`preapproval`) with pending checkout links, matching the local payment stack and avoiding a separate Stripe dependency.
 - 2026-05-31: Restaurant analytics defines occupancy as booked cover-minutes divided by available cover-minutes from active mesas and configured shifts; this keeps the metric useful without adding a separate capacity model.
+- 2026-05-31: Super-admin accounts live in their own table and can bootstrap the first user from env vars on first login, keeping internal access separate from restaurant staff accounts.
