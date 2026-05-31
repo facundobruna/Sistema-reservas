@@ -35,6 +35,7 @@ npm run dev
 ```
 
 Abrir `http://localhost:3000/r/demo-bistro` para reservar y `http://localhost:3000/admin` para el panel.
+Para crear un restaurante nuevo de punta a punta, usar `http://localhost:3000/onboarding`.
 
 Credenciales demo del staff:
 
@@ -91,6 +92,7 @@ npm run worker:notifications
 ## Variables de entorno
 
 Ver `.env.example`. En local `EMAIL_PROVIDER=console` loguea emails en la terminal. Para Resend, usar `EMAIL_PROVIDER=resend` y `RESEND_API_KEY`.
+Si corres la app en produccion sobre HTTPS, dejá `AUTH_COOKIE_SECURE=true` o configurá `APP_URL` con `https://`.
 
 ## Alcance del MVP
 

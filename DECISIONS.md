@@ -8,3 +8,4 @@
 - 2026-05-31: The product visual direction is editorial hospitality: Fraunces for display, Manrope for UI/body, warm paper neutrals, one restaurant-driven accent token, and Phosphor as the single icon set.
 - 2026-05-31: Dark mode is token-driven via `prefers-color-scheme` first; a manual theme switch can be added later without rewriting components.
 - 2026-05-31: Cookie `secure` follows `AUTH_COOKIE_SECURE` or `APP_URL`; Docker local uses HTTP, so staff and diner sessions must not be marked secure there.
+- 2026-05-31: Self-serve onboarding creates all-week rolling shifts by default; it favors getting a small restaurant live quickly, with precise day exceptions handled later in configuration.

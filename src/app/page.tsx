@@ -18,12 +18,18 @@ export default function HomePage() {
           <div className="flex flex-wrap gap-3">
             <Link
               className="group inline-flex min-h-12 items-center gap-3 rounded-[var(--radius-sm)] bg-[var(--accent)] px-5 text-sm font-semibold text-[var(--accent-foreground)] shadow-[0_16px_34px_color-mix(in_srgb,var(--accent)_28%,transparent)] transition-all duration-500 ease-[var(--ease-press)] hover:-translate-y-0.5"
-              href="/r/demo-bistro"
+              href="/onboarding"
             >
-              Abrir booking demo
+              Crear restaurante
               <span className="grid h-7 w-7 place-items-center rounded-[var(--radius-xs)] bg-white/18 transition-transform duration-500 ease-[var(--ease-press)] group-hover:translate-x-0.5">
                 <ArrowRight size={15} weight="bold" />
               </span>
+            </Link>
+            <Link
+              className="inline-flex min-h-12 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card-raised)] px-5 text-sm font-semibold text-[var(--foreground)] shadow-[var(--shadow-soft)] transition-all duration-500 ease-[var(--ease-press)] hover:-translate-y-0.5"
+              href="/r/demo-bistro"
+            >
+              Booking demo
             </Link>
             <Link
               className="inline-flex min-h-12 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card-raised)] px-5 text-sm font-semibold text-[var(--foreground)] shadow-[var(--shadow-soft)] transition-all duration-500 ease-[var(--ease-press)] hover:-translate-y-0.5"

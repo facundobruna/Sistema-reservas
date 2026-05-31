@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getPublicRestaurant } from "@/features/repositories";
 
 export const dynamic = "force-dynamic";
@@ -12,21 +13,37 @@ export default async function EmbedPage({ params }: { params: Promise<{ slug: st
   const script = `<script async src="${appUrl}/embed/${restaurant.slug}/script"></script>`;
 
   return (
-    <main id="content" className="min-h-screen px-5 py-10">
-      <section className="mx-auto grid max-w-3xl gap-5">
-        <div>
-          <p className="font-mono text-sm text-[var(--muted-foreground)]">Embed</p>
-          <h1 className="mt-2 text-3xl font-semibold">{restaurant.name}</h1>
-        </div>
-        <div className="grid gap-3 rounded-lg border border-[var(--border)] bg-white p-4">
-          <h2 className="font-semibold">Iframe</h2>
-          <pre className="overflow-x-auto rounded-md bg-[var(--muted)] p-3 text-sm">{iframe}</pre>
-        </div>
-        <div className="grid gap-3 rounded-lg border border-[var(--border)] bg-white p-4">
-          <h2 className="font-semibold">Script</h2>
-          <pre className="overflow-x-auto rounded-md bg-[var(--muted)] p-3 text-sm">{script}</pre>
+    <main id="content" className="min-h-screen px-4 py-6 sm:px-6">
+      <section className="surface-shell mx-auto max-w-5xl">
+        <div className="surface-core grid gap-6 p-5 sm:p-8">
+          <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
+            <div>
+              <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Embed listo</p>
+              <h1 className="mt-2 max-w-3xl text-5xl font-semibold leading-none">{restaurant.name}</h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">
+                Pega cualquiera de estos snippets en el sitio del restaurante para abrir el flujo de reserva con disponibilidad real.
+              </p>
+            </div>
+            <Link
+              className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-foreground)]"
+              href={`/r/${restaurant.slug}`}
+            >
+              Ver booking
+            </Link>
+          </div>
+          <EmbedSnippet label="Iframe" value={iframe} />
+          <EmbedSnippet label="Script" value={script} />
         </div>
       </section>
     </main>
+  );
+}
+
+function EmbedSnippet({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card-raised)] p-4">
+      <h2 className="text-2xl font-semibold">{label}</h2>
+      <pre className="overflow-x-auto rounded-[var(--radius-sm)] bg-[var(--muted)] p-3 text-sm leading-6">{value}</pre>
+    </div>
   );
 }
