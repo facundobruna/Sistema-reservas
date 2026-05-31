@@ -127,7 +127,8 @@ export async function requireSuperAdminSession(request?: Request) {
 
 export async function getDinerSession(request?: Request): Promise<DinerSession | null> {
   const bearer = request ? getBearerToken(request) : null;
-  const token = bearer ?? (await cookies()).get(DINER_COOKIE)?.value;
+  const linkToken = request ? new URL(request.url).searchParams.get("token") : null;
+  const token = bearer ?? linkToken ?? (await cookies()).get(DINER_COOKIE)?.value;
   if (!token) return null;
   const session = verifyToken<DinerSession>(token);
   return session?.type === "diner" ? session : null;

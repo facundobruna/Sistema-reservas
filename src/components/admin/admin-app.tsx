@@ -100,6 +100,8 @@ type BillingResponse = {
 
 const statuses = ["pending", "confirmed", "seated", "completed", "cancelled", "no_show"] as const;
 type ReservationStatus = (typeof statuses)[number];
+const waitlistStatuses = ["open", "notified", "booked", "cancelled"] as const;
+type WaitlistStatus = (typeof waitlistStatuses)[number];
 
 const statusCopy: Record<ReservationStatus, { label: string; tone: string }> = {
   pending: { label: "Pendiente", tone: "border-[color-mix(in_srgb,var(--warning)_40%,var(--border))] text-[var(--warning)]" },
@@ -108,6 +110,13 @@ const statusCopy: Record<ReservationStatus, { label: string; tone: string }> = {
   completed: { label: "Completada", tone: "border-[color-mix(in_srgb,var(--success)_30%,var(--border))] text-[var(--muted-foreground)]" },
   cancelled: { label: "Cancelada", tone: "border-[color-mix(in_srgb,var(--danger)_34%,var(--border))] text-[var(--danger)]" },
   no_show: { label: "No-show", tone: "border-[color-mix(in_srgb,var(--danger)_48%,var(--border))] text-[var(--danger)]" }
+};
+
+const waitlistStatusCopy: Record<WaitlistStatus, { label: string; tone: string }> = {
+  open: { label: "Abierta", tone: "border-[color-mix(in_srgb,var(--accent)_42%,var(--border))] text-[var(--accent)]" },
+  notified: { label: "Avisada", tone: "border-[color-mix(in_srgb,var(--warning)_40%,var(--border))] text-[var(--warning)]" },
+  booked: { label: "Convertida", tone: "border-[color-mix(in_srgb,var(--success)_42%,var(--border))] text-[var(--success)]" },
+  cancelled: { label: "Cancelada", tone: "border-[color-mix(in_srgb,var(--danger)_34%,var(--border))] text-[var(--danger)]" }
 };
 
 const dayNames = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
@@ -130,6 +139,11 @@ function bool(row: Row | null | undefined, key: string) {
 function statusOf(row: Row): ReservationStatus {
   const status = text(row, "status", "confirmed");
   return statuses.includes(status as ReservationStatus) ? (status as ReservationStatus) : "confirmed";
+}
+
+function waitlistStatusOf(row: Row): WaitlistStatus {
+  const status = text(row, "status", "open");
+  return waitlistStatuses.includes(status as WaitlistStatus) ? (status as WaitlistStatus) : "open";
 }
 
 function formatTime(value: string, timezone?: string) {
@@ -381,10 +395,22 @@ function Agenda({
     refetchInterval: 20_000
   });
 
+  const waitlist = useQuery({
+    queryKey: ["admin-waitlist", date],
+    queryFn: () => api<{ entries: Row[] }>(`/api/v1/admin/waitlist?date=${encodeURIComponent(date)}`),
+    refetchInterval: 30_000
+  });
+
   const transition = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ReservationStatus }) =>
       api(`/api/v1/admin/reservations/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-reservations"] })
+  });
+
+  const updateWaitlist = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: WaitlistStatus }) =>
+      api(`/api/v1/admin/waitlist/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-waitlist"] })
   });
 
   const manual = useMutation({
@@ -394,6 +420,7 @@ function Agenda({
   });
 
   const rows = useMemo(() => reservations.data?.reservations ?? [], [reservations.data?.reservations]);
+  const waitlistRows = useMemo(() => waitlist.data?.entries ?? [], [waitlist.data?.entries]);
   const metrics = useMemo(() => {
     const activeRows = rows.filter((row) => !["cancelled", "no_show"].includes(statusOf(row)));
     const seated = rows.filter((row) => statusOf(row) === "seated").length;
@@ -504,6 +531,39 @@ function Agenda({
                 title="Agenda despejada"
                 description="No hay reservas con estos filtros. Podés cargar una reserva manual desde el panel lateral."
               />
+            )}
+          </div>
+        </Panel>
+
+        <Panel className="reveal-in reveal-delay-2 overflow-hidden">
+          <div className="border-b border-[var(--border)] p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Lista de espera</p>
+                <h2 className="mt-1 text-2xl font-semibold">Solicitudes del dia</h2>
+              </div>
+              <Button size="sm" variant="secondary" onClick={() => waitlist.refetch()}>
+                <ArrowsClockwise size={16} weight="bold" />
+                Actualizar
+              </Button>
+            </div>
+          </div>
+          <div className="grid gap-2 p-3 sm:p-4">
+            {waitlist.isLoading ? (
+              Array.from({ length: 3 }).map((_, index) => <Skeleton className="h-20" key={index} />)
+            ) : waitlist.isError ? (
+              <EmptyState title="No pudimos cargar la lista" description="Reintenta la consulta antes de contactar a los comensales." />
+            ) : waitlistRows.length ? (
+              waitlistRows.map((row) => (
+                <WaitlistRow
+                  busy={updateWaitlist.isPending}
+                  key={text(row, "id")}
+                  row={row}
+                  onStatus={(status) => updateWaitlist.mutate({ id: text(row, "id"), status })}
+                />
+              ))
+            ) : (
+              <EmptyState title="Sin espera" description="Cuando no haya horarios disponibles, las solicitudes van a aparecer aca." />
             )}
           </div>
         </Panel>
@@ -642,6 +702,61 @@ function ReservationRow({
             {action.label}
           </Button>
         ))}
+      </div>
+    </article>
+  );
+}
+
+function WaitlistRow({
+  row,
+  busy,
+  onStatus
+}: {
+  row: Row;
+  busy: boolean;
+  onStatus: (status: WaitlistStatus) => void;
+}) {
+  const status = waitlistStatusOf(row);
+  const item = waitlistStatusCopy[status];
+  const partySize = number(row, "party_size");
+  const request = text(row, "special_requests");
+
+  return (
+    <article className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[color-mix(in_srgb,var(--card-raised)_86%,transparent)] p-3 sm:grid-cols-[1fr_auto] sm:items-center sm:p-4">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="truncate text-lg font-semibold">{text(row, "customer_name", "Sin nombre")}</h3>
+          <Badge className={item.tone}>{item.label}</Badge>
+          <Badge>{partySize} cub.</Badge>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--muted-foreground)]">
+          <span className="inline-flex items-center gap-1"><UsersThree size={14} weight="duotone" />{text(row, "customer_phone", "-")}</span>
+          <span className="inline-flex items-center gap-1"><Clock size={14} weight="duotone" />{text(row, "preferred_time", "Sin horario")}</span>
+          <span className="inline-flex items-center gap-1"><ForkKnife size={14} weight="duotone" />{text(row, "service_name", "Servicio")}</span>
+          <span className="inline-flex items-center gap-1"><MapPin size={14} weight="duotone" />{text(row, "zone_name", "Sin zona")}</span>
+        </div>
+        {request ? <p className="mt-2 line-clamp-2 text-sm text-[var(--foreground)]">{request}</p> : null}
+      </div>
+
+      <div className="flex flex-wrap justify-start gap-2 sm:max-w-56 sm:justify-end">
+        {status === "open" ? (
+          <Button disabled={busy} size="sm" variant="secondary" onClick={() => onStatus("notified")}>
+            <Check size={15} weight="bold" />
+            Avisada
+          </Button>
+        ) : null}
+        {status !== "booked" ? (
+          <Button disabled={busy} size="sm" onClick={() => onStatus("booked")}>
+            <CheckCircle size={15} weight="bold" />
+            Convertida
+          </Button>
+        ) : null}
+        {status !== "cancelled" ? (
+          <Button disabled={busy} size="sm" variant="danger" onClick={() => onStatus("cancelled")}>
+            <XCircle size={15} weight="bold" />
+            Cancelar
+          </Button>
+        ) : null}
       </div>
     </article>
   );

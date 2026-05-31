@@ -19,6 +19,24 @@ export const publicReservationSchema = z.object({
   specialRequests: z.string().max(500).optional().nullable()
 });
 
+export const waitlistEntrySchema = z.object({
+  date: dateSchema,
+  partySize: z.coerce.number().int().positive().max(30),
+  zoneId: uuidSchema.optional().nullable(),
+  serviceId: uuidSchema.optional().nullable(),
+  preferredTime: timeSchema.optional().nullable(),
+  customer: z.object({
+    name: z.string().min(1).max(120),
+    email: z.string().email().optional().nullable(),
+    phone: phoneSchema
+  }),
+  specialRequests: z.string().max(500).optional().nullable()
+});
+
+export const waitlistPatchSchema = z.object({
+  status: z.enum(["open", "notified", "booked", "cancelled"])
+});
+
 export const zoneBodySchema = z.object({
   name: z.string().min(1).max(80),
   position: z.coerce.number().int().default(0)

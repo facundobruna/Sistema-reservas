@@ -308,6 +308,34 @@ export const notification = pgTable(
   ]
 );
 
+export const waitlistEntry = pgTable(
+  "waitlist_entry",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    restaurantId: uuid("restaurant_id")
+      .notNull()
+      .references(() => restaurant.id, { onDelete: "cascade" }),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customer.id, { onDelete: "cascade" }),
+    serviceId: uuid("service_id").references(() => service.id, { onDelete: "set null" }),
+    zoneId: uuid("zone_id").references(() => zone.id, { onDelete: "set null" }),
+    date: date("date").notNull(),
+    partySize: integer("party_size").notNull(),
+    preferredTime: time("preferred_time"),
+    status: text("status").notNull().default("open"),
+    specialRequests: text("special_requests"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    index("idx_waitlist_restaurant_date").on(t.restaurantId, t.date, t.status),
+    index("idx_waitlist_customer").on(t.customerId, t.createdAt),
+    check("waitlist_party_chk", sql`${t.partySize} > 0`),
+    check("waitlist_status_chk", sql`${t.status} IN ('open', 'notified', 'booked', 'cancelled')`)
+  ]
+);
+
 export const billingSubscription = pgTable(
   "billing_subscription",
   {
@@ -402,5 +430,6 @@ export type Service = typeof service.$inferSelect;
 export type Shift = typeof shift.$inferSelect;
 export type Reservation = typeof reservation.$inferSelect;
 export type Customer = typeof customer.$inferSelect;
+export type WaitlistEntry = typeof waitlistEntry.$inferSelect;
 export type BillingSubscription = typeof billingSubscription.$inferSelect;
 export type SuperAdminUser = typeof superAdminUser.$inferSelect;

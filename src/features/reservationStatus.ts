@@ -48,14 +48,15 @@ export async function transitionReservation(input: {
       await client.query("DELETE FROM reservation_mesa WHERE reservation_id = $1", [input.id]);
     }
 
+    const updatesSpecialRequests = Object.hasOwn(input, "specialRequests");
     const updated = await client.query(
       `UPDATE reservation
        SET status = COALESCE($2::reservation_status, status),
-           special_requests = COALESCE($3, special_requests),
+           special_requests = CASE WHEN $3::boolean THEN $4 ELSE special_requests END,
            updated_at = now()
        WHERE id = $1
        RETURNING *`,
-      [input.id, input.status ?? null, input.specialRequests ?? null]
+      [input.id, input.status ?? null, updatesSpecialRequests, input.specialRequests ?? null]
     );
 
     await client.query("COMMIT");

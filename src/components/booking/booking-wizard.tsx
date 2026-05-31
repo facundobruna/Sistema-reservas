@@ -39,6 +39,19 @@ type ReservationResponse = {
     serviceId?: string | null;
     zoneId?: string | null;
   };
+  dinerToken?: string;
+};
+
+type WaitlistResponse = {
+  entry: {
+    id: string;
+    status: string;
+    date: string;
+    partySize: number;
+    preferredTime?: string | null;
+    serviceId?: string | null;
+    zoneId?: string | null;
+  };
 };
 
 const copy = {
@@ -94,6 +107,14 @@ const copy = {
     reservationCode: "Codigo de reserva",
     editSelection: "Editar seleccion",
     calendar: "Abrir en Google Calendar",
+    downloadIcs: "Descargar .ics",
+    manageReservation: "Gestionar reserva",
+    waitlistTitle: "Sumate a la lista de espera",
+    waitlistBody: "Te avisamos cuando se libere un horario compatible con tu grupo.",
+    joinWaitlist: "Anotarme",
+    joiningWaitlist: "Anotando",
+    waitlistSuccess: "Ya estas en lista de espera.",
+    waitlistCode: "Codigo de lista",
     service: "Servicio",
     unavailable: "Ese horario acaba de ocuparse. Elegí otro para seguir.",
     trust: ["Disponibilidad en vivo", "Sin doble booking", "Recordatorio por email"]
@@ -150,6 +171,14 @@ const copy = {
     reservationCode: "Reservation code",
     editSelection: "Edit selection",
     calendar: "Open in Google Calendar",
+    downloadIcs: "Download .ics",
+    manageReservation: "Manage reservation",
+    waitlistTitle: "Join the waitlist",
+    waitlistBody: "We will notify you when a compatible time opens for your party.",
+    joinWaitlist: "Join waitlist",
+    joiningWaitlist: "Joining",
+    waitlistSuccess: "You are on the waitlist.",
+    waitlistCode: "Waitlist code",
     service: "Service",
     unavailable: "That time was just taken. Choose another time to continue.",
     trust: ["Live availability", "No double booking", "Email reminder"]
@@ -186,6 +215,19 @@ function googleCalendarUrl(restaurant: PublicRestaurant, reservation?: Reservati
     location: restaurant.name
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function reservationManageUrl(restaurant: PublicRestaurant, locale: Locale, data: ReservationResponse) {
+  const params = new URLSearchParams({ locale });
+  if (data.dinerToken) params.set("token", data.dinerToken);
+  return `/r/${restaurant.slug}/reservations/${data.reservation.id}?${params.toString()}`;
+}
+
+function reservationCalendarUrl(restaurant: PublicRestaurant, data: ReservationResponse) {
+  const params = new URLSearchParams();
+  if (data.dinerToken) params.set("token", data.dinerToken);
+  const query = params.toString();
+  return `/api/v1/r/${restaurant.slug}/reservations/${data.reservation.id}/calendar${query ? `?${query}` : ""}`;
 }
 
 export function BookingWizard({ restaurant, locale }: { restaurant: PublicRestaurant; locale: Locale }) {
@@ -376,6 +418,7 @@ export function BookingWizard({ restaurant, locale }: { restaurant: PublicRestau
                 partySize={partySize}
                 phoneValid={phoneValid}
                 restaurant={restaurant}
+                serviceId={serviceId}
                 selectedSlot={selectedSlot}
                 selectedZone={selectedZone}
                 setCustomer={setCustomer}
@@ -445,6 +488,7 @@ function StepContent(props: {
   partySize: number;
   phoneValid: boolean;
   restaurant: PublicRestaurant;
+  serviceId: string | null;
   selectedSlot?: { time: string; serviceId: string };
   selectedZone?: { id: string; name: string };
   setCustomer: (value: { name: string; email: string; phone: string }) => void;
@@ -469,6 +513,7 @@ function StepContent(props: {
     partySize,
     phoneValid,
     restaurant,
+    serviceId,
     setCustomer,
     setParam,
     setParams,
@@ -539,7 +584,24 @@ function StepContent(props: {
           />
         ) : null}
         {!availability.isLoading && !availability.isError && availability.data?.slots.length === 0 ? (
-          <EmptyState title={c.noSlotsTitle} description={c.noSlotsBody} />
+          <div className="grid gap-3">
+            <EmptyState title={c.noSlotsTitle} description={c.noSlotsBody} />
+            <WaitlistForm
+              c={c}
+              customer={customer}
+              date={date}
+              emailValid={emailValid}
+              nameValid={nameValid}
+              partySize={partySize}
+              phoneValid={phoneValid}
+              restaurant={restaurant}
+              serviceId={serviceId}
+              setCustomer={setCustomer}
+              setSpecialRequests={setSpecialRequests}
+              specialRequests={specialRequests}
+              zoneId={zoneId}
+            />
+          </div>
         ) : null}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {availability.data?.slots.map((slot) => {
@@ -656,6 +718,14 @@ function StepContent(props: {
             <p className="text-sm font-semibold text-[var(--success)]">{c.reservationCode}</p>
             <p className="mt-2 break-all font-mono text-sm">{createReservation.data.reservation.id}</p>
           </div>
+          <a className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] px-4 text-sm font-semibold" href={reservationManageUrl(restaurant, locale, createReservation.data)}>
+            <NotePencil size={18} weight="duotone" />
+            <span className="ml-2">{c.manageReservation}</span>
+          </a>
+          <a className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] px-4 text-sm font-semibold" href={reservationCalendarUrl(restaurant, createReservation.data)}>
+            <CalendarDots size={18} weight="duotone" />
+            <span className="ml-2">{c.downloadIcs}</span>
+          </a>
           <a className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] px-4 text-sm font-semibold" href={googleCalendarUrl(restaurant, createReservation.data.reservation)} rel="noreferrer" target="_blank">
             <CalendarDots size={18} weight="duotone" />
             <span className="ml-2">{c.calendar}</span>
@@ -675,6 +745,108 @@ function StepContent(props: {
         </div>
       )}
     </StepFrame>
+  );
+}
+
+function WaitlistForm({
+  c,
+  customer,
+  date,
+  emailValid,
+  nameValid,
+  partySize,
+  phoneValid,
+  restaurant,
+  serviceId,
+  setCustomer,
+  setSpecialRequests,
+  specialRequests,
+  zoneId
+}: {
+  c: (typeof copy)[Locale];
+  customer: { name: string; email: string; phone: string };
+  date: string;
+  emailValid: boolean;
+  nameValid: boolean;
+  partySize: number;
+  phoneValid: boolean;
+  restaurant: PublicRestaurant;
+  serviceId: string | null;
+  setCustomer: (value: { name: string; email: string; phone: string }) => void;
+  setSpecialRequests: (value: string) => void;
+  specialRequests: string;
+  zoneId: string | null;
+}) {
+  const waitlist = useMutation<WaitlistResponse, Error, void>({
+    mutationFn: async () => {
+      const response = await fetch(`/api/v1/r/${restaurant.slug}/waitlist`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          date,
+          partySize,
+          zoneId: zoneId || null,
+          serviceId: serviceId || null,
+          preferredTime: null,
+          customer: {
+            name: customer.name.trim(),
+            email: customer.email.trim() || null,
+            phone: customer.phone.trim()
+          },
+          specialRequests: specialRequests.trim() || null
+        })
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { message?: string };
+        throw new Error(body.message ?? c.unavailable);
+      }
+      return (await response.json()) as WaitlistResponse;
+    }
+  });
+
+  if (waitlist.data) {
+    return (
+      <div className="rounded-[var(--radius-lg)] bg-[color-mix(in_srgb,var(--success)_14%,var(--card-raised))] p-5 text-left">
+        <p className="text-sm font-semibold text-[var(--success)]">{c.waitlistSuccess}</p>
+        <p className="mt-2 text-xs uppercase text-[var(--muted-foreground)]">{c.waitlistCode}</p>
+        <p className="mt-1 break-all font-mono text-sm">{waitlist.data.entry.id}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card-raised)] p-4 text-left">
+      <div>
+        <h4 className="text-xl font-semibold">{c.waitlistTitle}</h4>
+        <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">{c.waitlistBody}</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field hint={!nameValid && customer.name ? c.requiredName : undefined} label={c.name}>
+          <input className={inputClassName} value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} />
+        </Field>
+        <Field hint={c.optionalEmail} label={c.email}>
+          <input className={inputClassName} type="email" value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} />
+        </Field>
+        <Field hint={!phoneValid && customer.phone ? c.requiredPhone : undefined} label={c.phone}>
+          <input className={inputClassName} inputMode="tel" value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} />
+        </Field>
+      </div>
+      {!emailValid ? <p className="text-sm text-[var(--danger)]">{c.invalidEmail}</p> : null}
+      <Field label={c.specialRequests}>
+        <textarea className={`${inputClassName} min-h-24 py-3`} value={specialRequests} onChange={(event) => setSpecialRequests(event.target.value)} />
+      </Field>
+      {waitlist.error ? (
+        <div className="rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--danger)_10%,var(--card-raised))] p-3 text-sm text-[var(--danger)]">
+          {waitlist.error.message}
+        </div>
+      ) : null}
+      <div>
+        <Button disabled={!nameValid || !phoneValid || !emailValid || waitlist.isPending} onClick={() => waitlist.mutate()}>
+          <CheckCircle size={18} weight="bold" />
+          {waitlist.isPending ? c.joiningWaitlist : c.joinWaitlist}
+        </Button>
+      </div>
+    </div>
   );
 }
 
