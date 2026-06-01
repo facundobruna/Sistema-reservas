@@ -16,3 +16,5 @@
 - 2026-05-31: Overbooking is applied as extra pacing capacity per shift, not as table double-booking; the `reservation_mesa` exclusion constraint remains the hard inventory guarantee.
 - 2026-05-31: WhatsApp runs through a `console` provider by default and switches to Meta Cloud API with env vars; outbound business-initiated messages use templates when names are configured.
 - 2026-05-31: WhatsApp uses OpenAI structured outputs for natural-language reservation extraction when `OPENAI_API_KEY` is configured; the deterministic flow remains only as a local fallback.
+- 2026-05-31: Diner deletion is implemented as anonymization plus cancellation of future active reservations, preserving operational history without retaining direct personal identifiers.
+- 2026-05-31: Staff audit is scoped per restaurant and records sensitive panel actions; super-admin audit remains separate for internal SaaS actions.

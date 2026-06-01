@@ -2,6 +2,7 @@ import { DateTime } from "luxon";
 import { assertManualReservationLimit } from "@/features/billing";
 import { createReservation } from "@/features/booking";
 import { getRestaurantById } from "@/features/repositories";
+import { recordStaffAudit } from "@/features/staffAudit";
 import { requireStaffSession } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import { created, errorResponse, handleError, json, parseJson } from "@/lib/http";
@@ -62,6 +63,13 @@ export async function POST(request: Request) {
     const body = await parseJson(request, adminReservationSchema);
     const result = await createReservation({ ...body, slug: restaurant.slug, source: "manual" });
     if (!result.ok) return errorResponse("slot_unavailable", "The selected slot is no longer available", 409);
+    await recordStaffAudit({
+      session,
+      action: "reservation.manual_create",
+      targetType: "reservation",
+      targetId: result.reservation.id,
+      metadata: { partySize: result.reservation.partySize, startsAt: result.reservation.startsAt }
+    });
     return created(result);
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return errorResponse("unauthorized", "Staff session required", 401);

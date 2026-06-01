@@ -80,6 +80,17 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      <footer className="mx-auto flex max-w-7xl flex-wrap gap-4 border-t border-[var(--border)] py-6 text-sm text-[var(--muted-foreground)]">
+        <Link className="hover:text-[var(--foreground)]" href="/legal/terms">
+          Terminos
+        </Link>
+        <Link className="hover:text-[var(--foreground)]" href="/legal/privacy">
+          Privacidad
+        </Link>
+        <Link className="hover:text-[var(--foreground)]" href="/legal/data">
+          Datos del comensal
+        </Link>
+      </footer>
     </main>
   );
 }

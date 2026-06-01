@@ -319,7 +319,7 @@ export const whatsappConversation = pgTable(
     restaurantId: uuid("restaurant_id")
       .notNull()
       .references(() => restaurant.id, { onDelete: "cascade" }),
-    customerId: uuid("customer_id").references(() => customer.id, { onDelete: "set null" }),
+    customerId: uuid("customer_id").references(() => customer.id, { onDelete: "cascade" }),
     phone: text("phone").notNull(),
     state: jsonb("state").notNull().default(sql`'{}'::jsonb`),
     status: text("status").notNull().default("active"),
@@ -357,6 +357,55 @@ export const whatsappMessage = pgTable(
     index("idx_whatsapp_message_restaurant").on(t.restaurantId, t.createdAt),
     uniqueIndex("whatsapp_message_meta_id_key").on(t.metaMessageId).where(sql`${t.metaMessageId} IS NOT NULL`),
     check("whatsapp_message_direction_chk", sql`${t.direction} IN ('inbound', 'outbound')`)
+  ]
+);
+
+export const dataPrivacyRequest = pgTable(
+  "data_privacy_request",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    restaurantId: uuid("restaurant_id").references(() => restaurant.id, { onDelete: "set null" }),
+    customerId: uuid("customer_id").references(() => customer.id, { onDelete: "set null" }),
+    type: text("type").notNull().default("export"),
+    status: text("status").notNull().default("pending"),
+    email: citext("email"),
+    phone: text("phone"),
+    requesterNote: text("requester_note"),
+    metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
+    handledBy: uuid("handled_by").references(() => staffUser.id, { onDelete: "set null" }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    index("idx_data_privacy_request_restaurant").on(t.restaurantId, t.createdAt),
+    index("idx_data_privacy_request_customer").on(t.customerId, t.createdAt),
+    index("idx_data_privacy_request_status").on(t.status, t.createdAt),
+    check("data_privacy_request_type_chk", sql`${t.type} IN ('export', 'delete')`),
+    check("data_privacy_request_status_chk", sql`${t.status} IN ('pending', 'completed', 'rejected')`),
+    check(
+      "data_privacy_request_contact_chk",
+      sql`${t.customerId} IS NOT NULL OR ${t.email} IS NOT NULL OR ${t.phone} IS NOT NULL`
+    )
+  ]
+);
+
+export const staffAuditLog = pgTable(
+  "staff_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    restaurantId: uuid("restaurant_id")
+      .notNull()
+      .references(() => restaurant.id, { onDelete: "cascade" }),
+    staffUserId: uuid("staff_user_id").references(() => staffUser.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    targetType: text("target_type"),
+    targetId: text("target_id"),
+    metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    index("idx_staff_audit_log_restaurant").on(t.restaurantId, t.createdAt),
+    index("idx_staff_audit_log_staff").on(t.staffUserId, t.createdAt)
   ]
 );
 
@@ -484,6 +533,8 @@ export type Reservation = typeof reservation.$inferSelect;
 export type Customer = typeof customer.$inferSelect;
 export type WhatsappConversation = typeof whatsappConversation.$inferSelect;
 export type WhatsappMessage = typeof whatsappMessage.$inferSelect;
+export type DataPrivacyRequest = typeof dataPrivacyRequest.$inferSelect;
+export type StaffAuditLog = typeof staffAuditLog.$inferSelect;
 export type WaitlistEntry = typeof waitlistEntry.$inferSelect;
 export type BillingSubscription = typeof billingSubscription.$inferSelect;
 export type SuperAdminUser = typeof superAdminUser.$inferSelect;

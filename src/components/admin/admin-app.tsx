@@ -41,7 +41,7 @@ type Summary = {
   exceptions: Row[];
 };
 
-type Tab = "agenda" | "config" | "customers" | "analytics" | "billing";
+type Tab = "agenda" | "config" | "customers" | "analytics" | "billing" | "legal";
 
 type AnalyticsSegment = {
   label: string;
@@ -176,7 +176,11 @@ export function AdminApp() {
   const queryClient = useQueryClient();
   const requestedTab = searchParams.get("tab");
   const [tab, setTab] = useState<Tab>(
-    requestedTab === "config" || requestedTab === "customers" || requestedTab === "billing" || requestedTab === "analytics"
+    requestedTab === "config" ||
+      requestedTab === "customers" ||
+      requestedTab === "billing" ||
+      requestedTab === "analytics" ||
+      requestedTab === "legal"
       ? requestedTab
       : "agenda"
   );
@@ -243,6 +247,9 @@ export function AdminApp() {
               <TabButton active={tab === "billing"} icon={<CreditCard size={17} weight="duotone" />} onClick={() => setTab("billing")}>
                 Facturacion
               </TabButton>
+              <TabButton active={tab === "legal"} icon={<ClipboardText size={17} weight="duotone" />} onClick={() => setTab("legal")}>
+                Legal
+              </TabButton>
             </nav>
           </div>
         </header>
@@ -253,6 +260,7 @@ export function AdminApp() {
         {tab === "customers" && !summary.isLoading ? <Customers /> : null}
         {tab === "analytics" && !summary.isLoading ? <Analytics summary={summary.data} /> : null}
         {tab === "billing" && !summary.isLoading ? <Billing /> : null}
+        {tab === "legal" && !summary.isLoading ? <LegalOps /> : null}
       </div>
     </main>
   );
@@ -1628,6 +1636,133 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       <span className="min-w-0 truncate text-right font-semibold">{value}</span>
     </div>
   );
+}
+
+function LegalOps() {
+  const queryClient = useQueryClient();
+  const privacy = useQuery({
+    queryKey: ["admin-privacy-requests"],
+    queryFn: () => api<{ requests: Row[] }>("/api/v1/admin/privacy-requests")
+  });
+  const audit = useQuery({
+    queryKey: ["admin-audit"],
+    queryFn: () => api<{ audit: Row[] }>("/api/v1/admin/audit")
+  });
+  const updatePrivacy = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "completed" | "rejected" }) =>
+      api(`/api/v1/admin/privacy-requests/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-privacy-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+    }
+  });
+
+  const requests = privacy.data?.requests ?? [];
+  const pending = requests.filter((request) => text(request, "status") === "pending").length;
+  const auditRows = audit.data?.audit ?? [];
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[18rem_1fr]">
+      <Panel className="reveal-in xl:sticky xl:top-4 xl:self-start">
+        <div className="grid gap-4 p-4 sm:p-5">
+          <div>
+            <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Legal</p>
+            <h2 className="mt-1 text-3xl font-semibold">Datos y auditoria</h2>
+          </div>
+          <div className="grid gap-2">
+            <Badge>{pending} pendientes</Badge>
+            <Badge>{requests.length} solicitudes</Badge>
+            <Badge>{auditRows.length} acciones recientes</Badge>
+          </div>
+        </div>
+      </Panel>
+
+      <div className="grid gap-4">
+        <Panel className="reveal-in reveal-delay-1 overflow-hidden">
+          <div className="border-b border-[var(--border)] p-4 sm:p-5">
+            <h3 className="text-3xl font-semibold">Solicitudes de privacidad</h3>
+            <p className="mt-2 text-sm text-[var(--muted-foreground)]">Exportacion, borrado y revision manual cuando el comensal no tiene sesion.</p>
+          </div>
+          <div className="grid gap-2 p-3 sm:p-4">
+            {privacy.isLoading ? (
+              Array.from({ length: 4 }).map((_, index) => <Skeleton className="h-24" key={index} />)
+            ) : requests.length ? (
+              requests.map((request) => {
+                const status = text(request, "status");
+                return (
+                  <article className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card-raised)] p-4 lg:grid-cols-[1fr_auto] lg:items-center" key={text(request, "id")}>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge>{text(request, "type") === "delete" ? "Borrado" : "Exportacion"}</Badge>
+                        <Badge className={status === "pending" ? "text-[var(--warning)]" : status === "completed" ? "text-[var(--success)]" : "text-[var(--danger)]"}>
+                          {status}
+                        </Badge>
+                      </div>
+                      <h4 className="mt-2 text-lg font-semibold">{text(request, "customer_name", "Comensal sin vincular")}</h4>
+                      <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                        {text(request, "email", "sin email")} - {text(request, "phone", "sin telefono")}
+                      </p>
+                      {text(request, "requester_note") ? <p className="mt-2 text-sm">{text(request, "requester_note")}</p> : null}
+                      <p className="mt-2 font-mono text-xs text-[var(--muted-foreground)]">{text(request, "created_at")}</p>
+                    </div>
+                    {status === "pending" ? (
+                      <div className="flex flex-wrap gap-2 lg:justify-end">
+                        <Button size="sm" variant="secondary" disabled={updatePrivacy.isPending} onClick={() => updatePrivacy.mutate({ id: text(request, "id"), status: "completed" })}>
+                          Completar
+                        </Button>
+                        <Button size="sm" variant="danger" disabled={updatePrivacy.isPending} onClick={() => updatePrivacy.mutate({ id: text(request, "id"), status: "rejected" })}>
+                          Rechazar
+                        </Button>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })
+            ) : (
+              <EmptyState title="Sin solicitudes" description="Cuando un comensal pida exportacion o borrado, va a aparecer aca." />
+            )}
+          </div>
+        </Panel>
+
+        <Panel className="reveal-in reveal-delay-2 overflow-hidden">
+          <div className="border-b border-[var(--border)] p-4 sm:p-5">
+            <h3 className="text-3xl font-semibold">Auditoria staff</h3>
+            <p className="mt-2 text-sm text-[var(--muted-foreground)]">Registro de cambios sensibles en reservas, clientes, settings y privacidad.</p>
+          </div>
+          <div className="grid gap-2 p-3 sm:p-4">
+            {audit.isLoading ? (
+              Array.from({ length: 5 }).map((_, index) => <Skeleton className="h-16" key={index} />)
+            ) : auditRows.length ? (
+              auditRows.slice(0, 12).map((entry) => (
+                <article className="grid gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card-raised)] p-4 sm:grid-cols-[1fr_auto] sm:items-center" key={text(entry, "id")}>
+                  <div>
+                    <p className="font-semibold">{auditActionLabel(text(entry, "action"))}</p>
+                    <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                      {text(entry, "staffEmail", "staff")} - {text(entry, "targetType", "sistema")}
+                    </p>
+                  </div>
+                  <p className="font-mono text-xs text-[var(--muted-foreground)]">{text(entry, "createdAt")}</p>
+                </article>
+              ))
+            ) : (
+              <EmptyState title="Sin auditoria todavia" description="Las proximas acciones sensibles se registraran automaticamente." />
+            )}
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function auditActionLabel(action: string) {
+  const labels: Record<string, string> = {
+    "settings.update": "Settings actualizados",
+    "reservation.manual_create": "Reserva manual creada",
+    "reservation.update": "Reserva actualizada",
+    "customer.update": "Cliente actualizado",
+    "privacy_request.update": "Solicitud de privacidad actualizada"
+  };
+  return labels[action] ?? action;
 }
 
 function Customers() {

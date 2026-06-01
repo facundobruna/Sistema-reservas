@@ -34,6 +34,7 @@ services:
       STAFF_DEMO_PASSWORD: admin123
       JOBS_SECRET: docker-local-jobs-secret
       EMAIL_FROM: Reservas <reservas@example.com>
+      EMAIL_REPLY_TO: ""
       EMAIL_PROVIDER: console
       ENABLE_PG_BOSS: "false"
       SEED_DEMO: "true"

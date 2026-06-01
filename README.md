@@ -97,7 +97,7 @@ npm run worker:notifications
 
 ## Variables de entorno
 
-Ver `.env.example`. En local `EMAIL_PROVIDER=console` loguea emails en la terminal. Para Resend, usar `EMAIL_PROVIDER=resend` y `RESEND_API_KEY`.
+Ver `.env.example`. En local `EMAIL_PROVIDER=console` loguea emails en la terminal. Para Resend, usar `EMAIL_PROVIDER=resend`, `RESEND_API_KEY` y opcionalmente `EMAIL_REPLY_TO`.
 Para habilitar el primer super-admin sin tocar la base, definir `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD` y opcionalmente `SUPER_ADMIN_NAME`; el usuario se crea en el primer login valido.
 Si corres la app en produccion sobre HTTPS, dejá `AUTH_COOKIE_SECURE=true` o configurá `APP_URL` con `https://`.
 
@@ -114,6 +114,15 @@ El webhook esperado es `POST /api/v1/mercado-pago/webhook`; en Mercado Pago hay 
 
 Para WhatsApp, el webhook es `GET/POST /api/v1/whatsapp/webhook`. El bot IA se activa con `OPENAI_API_KEY` y usa `WHATSAPP_AI_MODEL` (`gpt-4o-mini` por defecto) para extraer reservas desde lenguaje natural. En local `WHATSAPP_PROVIDER=console` loguea respuestas sin llamar a Meta; en produccion usar `WHATSAPP_PROVIDER=meta`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` y `WHATSAPP_APP_SECRET`. Las plantillas transaccionales sugeridas estan documentadas en `docs/whatsapp.md`.
 
+## Legal y privacidad
+
+- Paginas publicas: `/legal/terms`, `/legal/privacy` y `/legal/data`.
+- Consentimiento de cookies: banner global con necesarias siempre activas y analiticas opcionales.
+- Exportacion de datos: `GET /api/v1/me/export` para comensal autenticado por cookie o token.
+- Borrado/anonimizacion: `POST /api/v1/me/delete` con `{ "confirm": true }`.
+- Solicitudes manuales: `POST /api/v1/privacy/requests`; el staff las revisa en la pestaña Legal del panel.
+- Auditoria staff: `GET /api/v1/admin/audit` registra cambios sensibles de settings, reservas, clientes y privacidad.
+
 ## Alcance del MVP
 
-Incluye reserva web, reserva conversacional por WhatsApp, panel de configuracion, agenda, analitica del restaurante, super-admin interno, onboarding self-serve, facturacion B2B con Mercado Pago, motor anti doble-booking con `EXCLUDE`, notificaciones por email/WhatsApp y embed por iframe/script. No incluye pagos o senas al comensal.
+Incluye reserva web, reserva conversacional por WhatsApp con IA, panel de configuracion, agenda, analitica del restaurante, super-admin interno, onboarding self-serve, facturacion B2B con Mercado Pago, legal/privacidad operativo, motor anti doble-booking con `EXCLUDE`, notificaciones por email/WhatsApp y embed por iframe/script. No incluye pagos o senas al comensal.

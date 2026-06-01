@@ -2,6 +2,7 @@ import { requireStaffSession } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import { errorResponse, handleError, json, parseJson } from "@/lib/http";
 import { customerPatchSchema, uuidSchema } from "@/lib/validation";
+import { recordStaffAudit } from "@/features/staffAudit";
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -43,6 +44,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       [session.restaurantId, id, body.notes ?? null, body.tags ?? null, body.vip ?? null]
     );
     if (!result.rows[0]) return errorResponse("not_found", "Customer not found", 404);
+    await recordStaffAudit({
+      session,
+      action: "customer.update",
+      targetType: "customer",
+      targetId: id,
+      metadata: { changedKeys: Object.keys(body) }
+    });
     return json(result.rows[0]);
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return errorResponse("unauthorized", "Staff session required", 401);

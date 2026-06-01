@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Manrope } from "next/font/google";
+import { CookieConsent } from "@/components/legal/cookie-consent";
 import { QueryProvider } from "@/components/query-provider";
 import "./globals.css";
 
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           Saltar al contenido
         </a>
         <QueryProvider>{children}</QueryProvider>
+        <CookieConsent />
       </body>
     </html>
   );

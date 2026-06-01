@@ -123,3 +123,24 @@ export const customerPatchSchema = z.object({
   tags: z.array(z.string().max(40)).optional(),
   vip: z.boolean().optional()
 });
+
+export const privacyRequestSchema = z
+  .object({
+    type: z.enum(["export", "delete"]),
+    restaurantSlug: z.string().min(1).max(120),
+    email: z.string().email().optional().nullable(),
+    phone: phoneSchema.optional().nullable(),
+    note: z.string().max(500).optional().nullable()
+  })
+  .refine((value) => Boolean(value.email || value.phone), {
+    message: "Email or phone is required",
+    path: ["email"]
+  });
+
+export const dinerDeletionSchema = z.object({
+  confirm: z.literal(true)
+});
+
+export const privacyRequestPatchSchema = z.object({
+  status: z.enum(["pending", "completed", "rejected"])
+});

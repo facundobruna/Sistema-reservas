@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { signToken } from "@/lib/crypto";
-import { getEmailSender } from "@/lib/email";
+import { getEmailSender, withTransactionalFooter } from "@/lib/email";
 import { handleError, json, parseJson } from "@/lib/http";
 
 const schema = z.object({ email: z.string().email() });
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     await getEmailSender().send({
       to: email,
       subject: "Tu link de acceso a reservas",
-      text: `Usa este link para acceder a tus reservas: ${link}`
+      text: withTransactionalFooter(`Usa este link para acceder a tus reservas: ${link}`)
     });
     return json({ ok: true });
   } catch (error) {

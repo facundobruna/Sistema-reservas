@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 import { PgBoss, type Job } from "pg-boss";
 import { getPool } from "@/lib/db";
 import { createDinerToken } from "@/lib/auth";
-import { getEmailSender } from "@/lib/email";
+import { getEmailSender, withTransactionalFooter } from "@/lib/email";
 import { getWhatsAppSender } from "@/lib/whatsapp";
 
 const JOB_NAME = "notification.send";
@@ -89,7 +89,9 @@ export async function processDueNotifications(limit = 25) {
      JOIN reservation r ON r.id = n.reservation_id
      JOIN restaurant rest ON rest.id = r.restaurant_id
      JOIN customer c ON c.id = r.customer_id
-     WHERE n.status = 'scheduled' AND n.scheduled_for <= now()
+     WHERE n.status = 'scheduled'
+       AND n.scheduled_for <= now()
+       AND r.status NOT IN ('cancelled', 'no_show')
      ORDER BY n.scheduled_for
      LIMIT $1`,
     [limit]
@@ -118,11 +120,17 @@ export async function processDueNotifications(limit = 25) {
       row.type === "confirmation"
         ? `Hola ${row.customer_name ?? ""}, tu reserva en ${row.restaurant_name} quedo confirmada para ${localStart.toFormat("dd/LL HH:mm")}.`
         : `Hola ${row.customer_name ?? ""}, te recordamos tu reserva en ${row.restaurant_name} para ${localStart.toFormat("dd/LL HH:mm")}.`;
+    const manageUrl = reservationManageUrl(row.restaurant_slug, row.reservation_id, row.customer_id);
 
     try {
       const sent =
         row.channel === "email"
-          ? await emailSender.send({ to: row.customer_email!, subject, text })
+          ? await emailSender.send({
+              to: row.customer_email!,
+              subject,
+              text: withTransactionalFooter(text, { manageUrl }),
+              headers: { "X-Entity-Ref-ID": row.reservation_id }
+            })
           : await sendWhatsAppNotification({
               sender: whatsappSender,
               to: row.customer_phone,
@@ -130,7 +138,7 @@ export async function processDueNotifications(limit = 25) {
               text,
               restaurantName: row.restaurant_name,
               localStart,
-              manageUrl: reservationManageUrl(row.restaurant_slug, row.reservation_id, row.customer_id)
+              manageUrl
             });
       await pool.query(
         `UPDATE notification
