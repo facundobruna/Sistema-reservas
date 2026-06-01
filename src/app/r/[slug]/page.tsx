@@ -20,29 +20,24 @@ export default async function RestaurantBookingPage({
   if (!restaurant) notFound();
   if (restaurant.suspendedAt) {
     return (
-      <main id="content" className="grid min-h-[100dvh] place-items-center px-4 py-8">
-        <section className="surface-shell w-full max-w-2xl">
-          <div className="surface-core p-6 text-center sm:p-8">
-            <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">{restaurant.name}</p>
-            <h1 className="mt-3 text-4xl font-semibold leading-tight">
-              {locale === "en" ? "Booking is temporarily unavailable" : "Las reservas estan temporalmente pausadas"}
-            </h1>
-            <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-[var(--muted-foreground)]">
-              {locale === "en"
-                ? "The restaurant is not accepting online reservations right now. Please contact the venue directly."
-                : "El restaurante no esta tomando reservas online en este momento. Contacta al local directamente."}
-            </p>
-          </div>
+      <main id="content" className="grid min-h-[100dvh] place-items-center px-5 py-10">
+        <section className="w-full max-w-md rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--card)] p-8 text-center shadow-[var(--shadow-soft)]">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">{restaurant.name}</p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-[-0.02em]">
+            {locale === "en" ? "Booking is temporarily unavailable" : "Las reservas estan en pausa"}
+          </h1>
+          <p className="mx-auto mt-4 max-w-sm text-sm leading-7 text-[var(--muted-foreground)]">
+            {locale === "en"
+              ? "The restaurant is not accepting online reservations right now. Please contact the venue directly."
+              : "El restaurante no esta tomando reservas online en este momento. Contacta al local directamente."}
+          </p>
         </section>
       </main>
     );
   }
 
   const branding = (restaurant.settings.branding as Record<string, unknown> | undefined) ?? {};
-  const accent =
-    typeof branding.accent === "string"
-      ? branding.accent
-      : "#0f766e";
+  const accent = typeof branding.accent === "string" ? branding.accent : "#e85513";
   const heroImage =
     typeof branding.heroImageUrl === "string"
       ? branding.heroImageUrl
@@ -54,62 +49,50 @@ export default async function RestaurantBookingPage({
   return (
     <main
       id="content"
-      className="booking-brand min-h-[100dvh] px-4 py-4 sm:px-6 lg:py-6"
+      className="booking-brand relative min-h-[100dvh] overflow-hidden px-5 py-10 sm:py-14"
       style={{ "--restaurant-accent": accent } as CSSProperties}
     >
-      <section className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[minmax(320px,0.88fr)_minmax(0,1.12fr)]">
-        <aside className="reveal-in surface-shell lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)]">
-          <div className="surface-core grid h-full overflow-hidden">
-            <div
-              className="relative min-h-64 overflow-hidden rounded-[calc(var(--radius-xl)-0.375rem)] bg-[#2d2018] text-[#fff8ed] lg:min-h-0"
-              style={
-                heroImage
-                  ? {
-                      backgroundImage: `linear-gradient(180deg, rgba(23,18,15,0.12), rgba(23,18,15,0.78)), url(${heroImage})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center"
-                    }
-                  : undefined
-              }
-            >
-              {!heroImage ? (
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(230,184,120,0.22),transparent_24rem),linear-gradient(135deg,#241914,#7a3b24)]" />
-              ) : null}
-              <div className="relative grid h-full min-h-64 content-between gap-8 p-5 sm:p-7">
-                <div className="flex items-start justify-between gap-4">
-                  {logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img alt={`${restaurant.name} logo`} className="max-h-12 max-w-32 rounded-[var(--radius-xs)] object-contain" src={logoUrl} />
-                  ) : (
-                    <div className="grid h-12 w-12 place-items-center rounded-[var(--radius-sm)] bg-white/12 font-display text-2xl">
-                      {restaurant.name.slice(0, 1)}
-                    </div>
-                  )}
-                  <span className="rounded-[var(--radius-xs)] bg-white/12 px-3 py-1 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-[#e7ccb9]">
-                    {locale === "en" ? "Booking" : "Reservas"}
-                  </span>
-                </div>
-                <div>
-                  <h1 className="max-w-xl text-5xl font-semibold leading-none md:text-6xl">{restaurant.name}</h1>
-                  <p className="mt-5 max-w-md text-sm leading-7 text-[#ead8ca]">
-                    {locale === "en"
-                      ? "Choose a table time with live availability. The restaurant confirms against its real dining-room inventory."
-                      : "Elegi horario con disponibilidad real. El restaurante confirma contra el inventario vivo del salon."}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {restaurant.zones.slice(0, 4).map((zone) => (
-                    <div className="rounded-[var(--radius-sm)] bg-white/10 px-3 py-2 text-[#fff8ed]" key={zone.id}>
-                      {zone.name}
-                    </div>
-                  ))}
-                </div>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[radial-gradient(72%_60%_at_50%_-8%,color-mix(in_srgb,var(--accent)_14%,transparent),transparent_72%)]"
+      />
+      <div className="relative mx-auto w-full max-w-xl">
+        <header className="reveal-in">
+          {heroImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt=""
+              aria-hidden
+              className="mb-6 h-36 w-full rounded-[var(--radius-lg)] object-cover sm:h-44"
+              src={heroImage}
+            />
+          ) : null}
+          <div className="flex items-center gap-3">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img alt={`${restaurant.name} logo`} className="h-11 w-11 rounded-[var(--radius-md)] border border-[var(--border)] object-contain" src={logoUrl} />
+            ) : (
+              <div className="grid h-11 w-11 place-items-center rounded-[var(--radius-md)] bg-[var(--accent-soft)] font-display text-lg font-semibold text-[var(--accent)]">
+                {restaurant.name.slice(0, 1)}
               </div>
-            </div>
+            )}
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+              {locale === "en" ? "Live availability" : "Disponibilidad en vivo"}
+            </span>
           </div>
-        </aside>
-        <BookingWizard locale={locale} restaurant={restaurant} />
-      </section>
+          <h1 className="mt-5 text-4xl font-semibold tracking-[-0.03em] sm:text-5xl">{restaurant.name}</h1>
+          <p className="mt-3 max-w-md text-sm leading-7 text-[var(--muted-foreground)] sm:text-base">
+            {locale === "en"
+              ? "Pick a time below. The restaurant confirms against its live dining-room inventory, so there is no double booking."
+              : "Elegi un horario abajo. El restaurante confirma contra el inventario vivo del salon, sin dobles reservas."}
+          </p>
+        </header>
+
+        <div className="mt-8">
+          <BookingWizard locale={locale} restaurant={restaurant} />
+        </div>
+      </div>
     </main>
   );
 }

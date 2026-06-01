@@ -17,11 +17,11 @@ export default function HomePage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              className="group inline-flex min-h-12 items-center gap-3 rounded-[var(--radius-sm)] bg-[var(--accent)] px-5 text-sm font-semibold text-[var(--accent-foreground)] shadow-[0_16px_34px_color-mix(in_srgb,var(--accent)_28%,transparent)] transition-all duration-500 ease-[var(--ease-press)] hover:-translate-y-0.5"
+              className="group inline-flex min-h-12 items-center gap-3 rounded-[var(--radius-sm)] bg-[var(--foreground)] px-5 text-sm font-medium text-[var(--background)] shadow-[var(--shadow-soft)] transition-all duration-200 ease-[var(--ease-press)] hover:opacity-90 active:scale-[0.985]"
               href="/onboarding"
             >
               Crear restaurante
-              <span className="grid h-7 w-7 place-items-center rounded-[var(--radius-xs)] bg-white/18 transition-transform duration-500 ease-[var(--ease-press)] group-hover:translate-x-0.5">
+              <span className="grid h-7 w-7 place-items-center rounded-[var(--radius-xs)] bg-[color-mix(in_srgb,var(--background)_22%,transparent)] transition-transform duration-200 ease-[var(--ease-press)] group-hover:translate-x-0.5">
                 <ArrowRight size={15} weight="bold" />
               </span>
             </Link>

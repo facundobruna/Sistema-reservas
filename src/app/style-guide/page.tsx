@@ -21,7 +21,7 @@ const swatches = [
   ["Success", "--success"]
 ];
 
-const spacing = ["0.375rem", "0.625rem", "0.875rem", "1.25rem", "1.75rem", "2.75rem"];
+const spacing = ["0.5rem", "0.75rem", "1rem", "1.5rem", "2.5rem", "4rem"];
 
 export default function StyleGuidePage() {
   return (
@@ -30,16 +30,16 @@ export default function StyleGuidePage() {
         <header className="reveal-in grid gap-5 border-b border-[var(--border)] pb-10 md:grid-cols-[0.9fr_1.1fr] md:items-end">
           <div>
             <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Mesa Clara / style-guide</p>
-            <h1 className="mt-4 text-5xl font-semibold leading-none md:text-7xl">Hospitalidad editorial.</h1>
+            <h1 className="mt-4 text-5xl font-semibold leading-[0.95] tracking-[-0.03em] md:text-7xl">Sistema de diseño.</h1>
           </div>
           <p className="max-w-2xl text-base leading-8 text-[var(--muted-foreground)]">
-            Sistema visual para producto SaaS y booking por restaurante: calido, preciso, con superficies materiales,
-            tipografia de caracter y estados de interfaz resueltos.
+            Lenguaje visual para producto SaaS y booking por restaurante: neutros frios, un acento calido, superficies
+            limpias, tipografia moderna y estados de interfaz resueltos.
           </p>
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[0.75fr_1.25fr]">
-          <GuideTitle eyebrow="01" title="Tokens" text="La paleta usa neutrales calidos, acento profundo y roles semanticos para estado." />
+          <GuideTitle eyebrow="01" title="Tokens" text="Neutros frios como base, un unico acento calido y roles semanticos para cada estado." />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {swatches.map(([label, token], index) => (
               <div className="reveal-in surface-shell" style={{ animationDelay: `${index * 45}ms` }} key={token}>
@@ -54,15 +54,15 @@ export default function StyleGuidePage() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[0.75fr_1.25fr]">
-          <GuideTitle eyebrow="02" title="Tipografia" text="Fraunces toma los momentos editoriales; Manrope sostiene UI y lectura operativa." />
+          <GuideTitle eyebrow="02" title="Tipografia" text="Geist sostiene display y UI con tracking ajustado; Geist Mono marca datos, horarios y codigos." />
           <Panel>
             <div className="grid gap-8 p-6">
               <div>
-                <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Display / Fraunces</p>
-                <h2 className="mt-3 max-w-3xl text-5xl font-semibold leading-none">Una mesa libre no es solo inventario.</h2>
+                <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Display / Geist</p>
+                <h2 className="mt-3 max-w-3xl text-5xl font-semibold leading-[0.98] tracking-[-0.03em]">Una mesa libre no es solo inventario.</h2>
               </div>
               <div>
-                <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Body / Manrope</p>
+                <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Body / Geist</p>
                 <p className="mt-3 max-w-2xl text-base leading-8 text-[var(--muted-foreground)]">
                   La interfaz debe ayudar al equipo a leer rapidamente el estado del salon, decidir sin friccion y
                   mantener un trato cuidado con cada comensal.

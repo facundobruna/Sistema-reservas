@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import { Fraunces, Manrope } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { CookieConsent } from "@/components/legal/cookie-consent";
 import { QueryProvider } from "@/components/query-provider";
 import "./globals.css";
 
-const display = Fraunces({
-  variable: "--font-display",
+const sans = Geist({
+  variable: "--font-sans-app",
   subsets: ["latin"],
-  axes: ["SOFT", "WONK", "opsz"],
   display: "swap"
 });
 
-const body = Manrope({
-  variable: "--font-body",
-  subsets: ["latin"]
+const mono = Geist_Mono({
+  variable: "--font-mono-app",
+  subsets: ["latin"],
+  display: "swap"
 });
 
 export const metadata: Metadata = {
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${display.variable} ${body.variable}`}>
+    <html lang="es" className={`${sans.variable} ${mono.variable}`}>
       <body className="antialiased">
         <a className="skip-link" href="#content">
           Saltar al contenido

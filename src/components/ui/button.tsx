@@ -10,20 +10,20 @@ export function Button({ className, variant = "primary", size = "md", ...props }
   return (
     <button
       className={cn(
-        "group inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)] border font-semibold transition-all duration-500 ease-[var(--ease-press)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45",
+        "group inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)] border font-medium transition-all duration-200 ease-[var(--ease-press)] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-45",
         size === "sm" && "h-9 px-3 text-xs",
         size === "md" && "min-h-11 px-4 text-sm",
         size === "icon" && "h-10 w-10 p-0",
         variant === "primary" &&
-          "border-transparent bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[0_10px_26px_color-mix(in_srgb,var(--accent)_26%,transparent)] hover:-translate-y-0.5 hover:shadow-[0_16px_34px_color-mix(in_srgb,var(--accent)_30%,transparent)]",
+          "border-transparent bg-[var(--foreground)] text-[var(--background)] shadow-[var(--shadow-soft)] hover:opacity-90",
         variant === "secondary" &&
-          "border-[color-mix(in_srgb,var(--border)_86%,white)] bg-[var(--card-raised)] text-[var(--foreground)] shadow-[var(--shadow-soft)] hover:-translate-y-0.5 hover:border-[var(--border-strong)]",
+          "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] shadow-[var(--shadow-soft)] hover:border-[var(--border-strong)] hover:bg-[var(--muted)]",
         variant === "ghost" &&
-          "border-transparent bg-transparent text-[var(--foreground)] hover:bg-[color-mix(in_srgb,var(--muted)_72%,transparent)]",
+          "border-transparent bg-transparent text-[var(--foreground)] hover:bg-[var(--muted)]",
         variant === "quiet" &&
-          "border-transparent bg-[color-mix(in_srgb,var(--muted)_62%,transparent)] text-[var(--foreground)] hover:bg-[var(--muted)]",
+          "border-transparent bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)]",
         variant === "danger" &&
-          "border-transparent bg-[var(--danger)] text-white shadow-[0_10px_26px_color-mix(in_srgb,var(--danger)_22%,transparent)] hover:-translate-y-0.5",
+          "border-transparent bg-[var(--danger)] text-white shadow-[var(--shadow-soft)] hover:opacity-90",
         className
       )}
       {...props}

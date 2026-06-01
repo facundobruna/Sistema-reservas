@@ -19,7 +19,7 @@ import { DateTime } from "luxon";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge, EmptyState, Field, Panel, Skeleton, inputClassName } from "@/components/ui/field";
+import { Badge, EmptyState, Field, Skeleton, inputClassName } from "@/components/ui/field";
 import type { PublicRestaurant } from "@/features/repositories";
 import type { Locale } from "@/lib/i18n";
 
@@ -185,16 +185,6 @@ const copy = {
   }
 } as const;
 
-const stepMeta = {
-  party: { icon: UsersThree },
-  date: { icon: CalendarDots },
-  time: { icon: Clock },
-  zone: { icon: MapPin },
-  details: { icon: User },
-  requests: { icon: NotePencil },
-  confirm: { icon: CheckCircle }
-} as const;
-
 function todayIn(timezone: string) {
   return DateTime.now().setZone(timezone).toISODate() ?? "";
 }
@@ -344,133 +334,101 @@ export function BookingWizard({ restaurant, locale }: { restaurant: PublicRestau
     step === "requests";
 
   return (
-    <Panel className="reveal-in reveal-delay-1 min-h-[calc(100dvh-2rem)] overflow-hidden lg:min-h-[calc(100dvh-3rem)]">
-      <div className="grid min-h-[calc(100dvh-2.75rem)] lg:grid-cols-[14rem_1fr]">
-        <aside className="hidden border-r border-[var(--border)] bg-[color-mix(in_srgb,var(--muted)_34%,transparent)] p-4 lg:grid">
-          <div className="grid content-between">
-            <div className="grid gap-2">
-              {steps.map((item, index) => {
-                const Icon = stepMeta[item].icon;
-                const active = item === step;
-                const done = index < currentIndex;
-                return (
-                  <button
-                    className={`grid grid-cols-[2rem_1fr] items-center gap-3 rounded-[var(--radius-sm)] px-2 py-2 text-left text-sm transition-all duration-500 ease-[var(--ease-press)] ${
-                      active ? "bg-[var(--card-raised)] text-[var(--foreground)] shadow-[var(--shadow-soft)]" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
-                    }`}
-                    key={item}
-                    onClick={() => go(item)}
-                    type="button"
-                  >
-                    <span className={`grid h-8 w-8 place-items-center rounded-[var(--radius-xs)] ${active || done ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "bg-[var(--card)]"}`}>
-                      <Icon size={16} weight={active ? "fill" : "duotone"} />
-                    </span>
-                    <span className="font-semibold">{c[item]}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="grid gap-2">
-              {c.trust.map((item) => (
-                <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]" key={item}>
-                  <ShieldCheck size={15} weight="duotone" className="text-[var(--accent)]" />
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        <section className="grid content-between">
-          <header className="border-b border-[var(--border)] px-4 py-4 sm:px-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">
-                  {c.stepWord} {currentIndex + 1} / {steps.length}
-                </p>
-                <h2 className="mt-1 text-3xl font-semibold leading-tight">{c.shellKicker}</h2>
-              </div>
-              <div className="flex gap-1 pt-2">
-                {steps.map((item, index) => (
-                  <span
-                    aria-label={c[item]}
-                    className={`h-1.5 rounded-full transition-all duration-500 ${index <= currentIndex ? "w-8 bg-[var(--accent)]" : "w-3 bg-[var(--muted)]"}`}
-                    key={item}
-                  />
-                ))}
-              </div>
-            </div>
-          </header>
-
-          <div className="grid gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[1fr_18rem] lg:py-8">
-            <div className="min-h-[28rem]">
-              <StepContent
-                availability={availability}
-                c={c}
-                createReservation={createReservation}
-                customer={customer}
-                date={date}
-                emailValid={emailValid}
-                initialDate={initialDate}
-                locale={locale}
-                nameValid={nameValid}
-                needsZone={needsZone}
-                partySize={partySize}
-                phoneValid={phoneValid}
-                restaurant={restaurant}
-                serviceId={serviceId}
-                selectedSlot={selectedSlot}
-                selectedZone={selectedZone}
-                setCustomer={setCustomer}
-                setParam={setParam}
-                setParams={setParams}
-                setSpecialRequests={setSpecialRequests}
-                specialRequests={specialRequests}
-                step={step}
-                time={time}
-                zoneId={zoneId}
+    <div className="reveal-in reveal-delay-1">
+      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-soft)]">
+        <div className="flex items-center justify-between gap-4 bg-[linear-gradient(to_bottom,var(--accent-soft),transparent)] px-5 pb-4 pt-5 sm:px-7 sm:pt-6">
+          <p className="font-mono text-xs text-[var(--muted-foreground)]">
+            {c.stepWord} {currentIndex + 1} / {steps.length}
+          </p>
+          <div className="flex items-center gap-1.5">
+            {steps.map((item, index) => (
+              <span
+                aria-label={c[item]}
+                className={`h-1 rounded-full transition-all duration-300 ease-[var(--ease-press)] ${
+                  index <= currentIndex ? "w-6 bg-[var(--accent)]" : "w-3 bg-[var(--border-strong)]"
+                }`}
+                key={item}
               />
-            </div>
-
-            <aside className="grid content-start gap-3 rounded-[var(--radius-lg)] bg-[color-mix(in_srgb,var(--muted)_46%,transparent)] p-4">
-              <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">{c.summary}</p>
-              <SummaryItem icon={<UsersThree size={17} weight="duotone" />} label={c.party} value={String(partySize)} />
-              <SummaryItem icon={<CalendarDots size={17} weight="duotone" />} label={c.date} value={DateTime.fromISO(date).setLocale(locale).toFormat("dd LLL")} />
-              <SummaryItem icon={<Clock size={17} weight="duotone" />} label={c.time} value={selectedTimeLabel ?? "-"} />
-              <SummaryItem icon={<MapPin size={17} weight="duotone" />} label={c.zone} value={selectedZone?.name ?? c.anyZone} />
-              <SummaryItem icon={<ForkKnife size={17} weight="duotone" />} label={c.service} value={selectedService?.name ?? "-"} />
-            </aside>
+            ))}
           </div>
+        </div>
 
-          <footer className="flex items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-4 sm:px-6">
-            <Button disabled={currentIndex === 0 || createReservation.isPending} variant="ghost" onClick={() => go(prevStep())}>
-              <CaretLeft size={18} weight="bold" />
-              {c.back}
-            </Button>
-            {step === "confirm" ? (
-              createReservation.data ? (
-                <Button variant="secondary" onClick={() => go("time")}>
-                  {c.editSelection}
-                </Button>
-              ) : (
-                <Button
-                  disabled={!time || !nameValid || !phoneValid || !emailValid || createReservation.isPending || (needsZone && !zoneId)}
-                  onClick={() => createReservation.mutate()}
-                >
-                  <CheckCircle size={18} weight="bold" />
-                  {createReservation.isPending ? c.confirming : c.complete}
-                </Button>
-              )
-            ) : (
-              <Button disabled={!canProceed || createReservation.isPending} onClick={() => go(nextStep())}>
-                {c.next}
-                <CaretRight size={18} weight="bold" />
+        <div className="px-5 py-7 sm:px-7 sm:py-8">
+          <div className="min-h-[22rem]">
+            <StepContent
+              availability={availability}
+              c={c}
+              createReservation={createReservation}
+              customer={customer}
+              date={date}
+              emailValid={emailValid}
+              initialDate={initialDate}
+              locale={locale}
+              nameValid={nameValid}
+              needsZone={needsZone}
+              partySize={partySize}
+              phoneValid={phoneValid}
+              restaurant={restaurant}
+              serviceId={serviceId}
+              selectedSlot={selectedSlot}
+              selectedZone={selectedZone}
+              setCustomer={setCustomer}
+              setParam={setParam}
+              setParams={setParams}
+              setSpecialRequests={setSpecialRequests}
+              specialRequests={specialRequests}
+              step={step}
+              time={time}
+              zoneId={zoneId}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-[var(--border)] px-5 py-4 sm:px-7">
+          <SummaryItem icon={<UsersThree size={14} weight="bold" />} label={c.party} value={String(partySize)} />
+          <SummaryItem icon={<CalendarDots size={14} weight="bold" />} label={c.date} value={DateTime.fromISO(date).setLocale(locale).toFormat("dd LLL")} />
+          {selectedTimeLabel ? <SummaryItem icon={<Clock size={14} weight="bold" />} label={c.time} value={selectedTimeLabel} /> : null}
+          {needsZone ? <SummaryItem icon={<MapPin size={14} weight="bold" />} label={c.zone} value={selectedZone?.name ?? c.anyZone} /> : null}
+          {selectedService ? <SummaryItem icon={<ForkKnife size={14} weight="bold" />} label={c.service} value={selectedService.name} /> : null}
+        </div>
+
+        <footer className="flex items-center justify-between gap-3 border-t border-[var(--border)] px-5 py-4 sm:px-7">
+          <Button disabled={currentIndex === 0 || createReservation.isPending} variant="ghost" onClick={() => go(prevStep())}>
+            <CaretLeft size={18} weight="bold" />
+            {c.back}
+          </Button>
+          {step === "confirm" ? (
+            createReservation.data ? (
+              <Button variant="secondary" onClick={() => go("time")}>
+                {c.editSelection}
               </Button>
-            )}
-          </footer>
-        </section>
+            ) : (
+              <Button
+                disabled={!time || !nameValid || !phoneValid || !emailValid || createReservation.isPending || (needsZone && !zoneId)}
+                onClick={() => createReservation.mutate()}
+              >
+                <CheckCircle size={18} weight="bold" />
+                {createReservation.isPending ? c.confirming : c.complete}
+              </Button>
+            )
+          ) : (
+            <Button disabled={!canProceed || createReservation.isPending} onClick={() => go(nextStep())}>
+              {c.next}
+              <CaretRight size={18} weight="bold" />
+            </Button>
+          )}
+        </footer>
       </div>
-    </Panel>
+
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+        {c.trust.map((item) => (
+          <span className="inline-flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]" key={item}>
+            <ShieldCheck size={14} weight="duotone" className="text-[var(--accent)]" />
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -530,10 +488,10 @@ function StepContent(props: {
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
             <button
-              className={`grid aspect-square place-items-center rounded-[var(--radius-md)] border text-2xl font-semibold transition-all duration-500 ease-[var(--ease-press)] ${
+              className={`grid aspect-square place-items-center rounded-[var(--radius-md)] border text-xl font-medium transition-colors duration-150 ${
                 partySize === value
-                  ? "border-transparent bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[0_16px_34px_color-mix(in_srgb,var(--accent)_25%,transparent)]"
-                  : "border-[var(--border)] bg-[var(--card-raised)] hover:-translate-y-0.5 hover:border-[var(--border-strong)]"
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                  : "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-[var(--border-strong)] hover:bg-[var(--muted)]"
               }`}
               key={value}
               onClick={() => setParam("party", String(value))}
@@ -610,17 +568,17 @@ function StepContent(props: {
             const active = time === slot.time;
             return (
               <button
-                className={`grid gap-1 rounded-[var(--radius-md)] border px-4 py-3 text-left transition-all duration-500 ease-[var(--ease-press)] ${
+                className={`grid gap-0.5 rounded-[var(--radius-md)] border px-4 py-3 text-left transition-colors duration-150 ${
                   active
-                    ? "border-transparent bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[0_16px_34px_color-mix(in_srgb,var(--accent)_25%,transparent)]"
-                    : "border-[var(--border)] bg-[var(--card-raised)] hover:-translate-y-0.5 hover:border-[var(--border-strong)]"
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                    : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--border-strong)] hover:bg-[var(--muted)]"
                 }`}
                 key={slot.time}
                 onClick={() => setParams({ time: slot.time, serviceId: slot.serviceId })}
                 type="button"
               >
-                <span className="font-mono text-lg font-semibold">{local.toFormat("HH:mm")}</span>
-                <span className={active ? "text-xs opacity-80" : "text-xs text-[var(--muted-foreground)]"}>{service?.name ?? c.service}</span>
+                <span className={`font-mono text-base font-semibold ${active ? "text-[var(--accent)]" : "text-[var(--foreground)]"}`}>{local.toFormat("HH:mm")}</span>
+                <span className="text-xs text-[var(--muted-foreground)]">{service?.name ?? c.service}</span>
               </button>
             );
           })}
@@ -634,30 +592,41 @@ function StepContent(props: {
       <StepFrame body={c.zoneBody} icon={<MapPin size={24} weight="duotone" />} title={c.zoneTitle}>
         <div className="grid gap-2">
           <button
-            className={`rounded-[var(--radius-md)] border px-4 py-4 text-left transition-all duration-500 ease-[var(--ease-press)] ${
-              !zoneId ? "border-transparent bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card-raised)] hover:border-[var(--border-strong)]"
+            className={`flex items-center justify-between gap-3 rounded-[var(--radius-md)] border px-4 py-4 text-left transition-colors duration-150 ${
+              !zoneId
+                ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--border-strong)] hover:bg-[var(--muted)]"
             }`}
             onClick={() => setParam("zoneId", null)}
             type="button"
           >
-            <span className="font-semibold">{c.noPreference}</span>
-            <span className="mt-1 block text-sm opacity-75">{c.anyZone}</span>
+            <span>
+              <span className={`block font-medium ${!zoneId ? "text-[var(--accent)]" : "text-[var(--foreground)]"}`}>{c.noPreference}</span>
+              <span className="mt-0.5 block text-sm text-[var(--muted-foreground)]">{c.anyZone}</span>
+            </span>
+            {!zoneId ? <CheckCircle size={20} weight="fill" className="shrink-0 text-[var(--accent)]" /> : null}
           </button>
-          {restaurant.zones.map((zone) => (
-            <button
-              className={`rounded-[var(--radius-md)] border px-4 py-4 text-left transition-all duration-500 ease-[var(--ease-press)] ${
-                zoneId === zone.id
-                  ? "border-transparent bg-[var(--accent)] text-[var(--accent-foreground)]"
-                  : "border-[var(--border)] bg-[var(--card-raised)] hover:border-[var(--border-strong)]"
-              }`}
-              key={zone.id}
-              onClick={() => setParam("zoneId", zone.id)}
-              type="button"
-            >
-              <span className="font-semibold">{zone.name}</span>
-              <span className="mt-1 block text-sm opacity-75">{zoneId === zone.id ? c.selected : c.zone}</span>
-            </button>
-          ))}
+          {restaurant.zones.map((zone) => {
+            const active = zoneId === zone.id;
+            return (
+              <button
+                className={`flex items-center justify-between gap-3 rounded-[var(--radius-md)] border px-4 py-4 text-left transition-colors duration-150 ${
+                  active
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                    : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--border-strong)] hover:bg-[var(--muted)]"
+                }`}
+                key={zone.id}
+                onClick={() => setParam("zoneId", zone.id)}
+                type="button"
+              >
+                <span>
+                  <span className={`block font-medium ${active ? "text-[var(--accent)]" : "text-[var(--foreground)]"}`}>{zone.name}</span>
+                  <span className="mt-0.5 block text-sm text-[var(--muted-foreground)]">{active ? c.selected : c.zone}</span>
+                </span>
+                {active ? <CheckCircle size={20} weight="fill" className="shrink-0 text-[var(--accent)]" /> : null}
+              </button>
+            );
+          })}
         </div>
       </StepFrame>
     );
@@ -714,31 +683,38 @@ function StepContent(props: {
     <StepFrame body={createReservation.data ? c.confirmedBody : c.confirmBody} icon={<CheckCircle size={24} weight="duotone" />} title={createReservation.data ? c.confirmedTitle : c.confirmTitle}>
       {createReservation.data ? (
         <div className="grid gap-4">
-          <div className="rounded-[var(--radius-lg)] bg-[color-mix(in_srgb,var(--success)_14%,var(--card-raised))] p-5">
-            <p className="text-sm font-semibold text-[var(--success)]">{c.reservationCode}</p>
-            <p className="mt-2 break-all font-mono text-sm">{createReservation.data.reservation.id}</p>
+          <div className="rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--success)_30%,var(--border))] bg-[color-mix(in_srgb,var(--success)_8%,var(--card))] p-5">
+            <p className="flex items-center gap-2 text-sm font-medium text-[var(--success)]">
+              <CheckCircle size={18} weight="fill" />
+              {c.reservationCode}
+            </p>
+            <p className="mt-2 break-all font-mono text-sm text-[var(--foreground)]">{createReservation.data.reservation.id}</p>
           </div>
-          <a className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] px-4 text-sm font-semibold" href={reservationManageUrl(restaurant, locale, createReservation.data)}>
-            <NotePencil size={18} weight="duotone" />
-            <span className="ml-2">{c.manageReservation}</span>
-          </a>
-          <a className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] px-4 text-sm font-semibold" href={reservationCalendarUrl(restaurant, createReservation.data)}>
-            <CalendarDots size={18} weight="duotone" />
-            <span className="ml-2">{c.downloadIcs}</span>
-          </a>
-          <a className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] px-4 text-sm font-semibold" href={googleCalendarUrl(restaurant, createReservation.data.reservation)} rel="noreferrer" target="_blank">
-            <CalendarDots size={18} weight="duotone" />
-            <span className="ml-2">{c.calendar}</span>
-          </a>
+          <div className="grid gap-2">
+            <a className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card)] px-4 text-sm font-medium transition-colors hover:bg-[var(--muted)]" href={reservationManageUrl(restaurant, locale, createReservation.data)}>
+              <NotePencil size={18} weight="duotone" />
+              {c.manageReservation}
+            </a>
+            <a className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card)] px-4 text-sm font-medium transition-colors hover:bg-[var(--muted)]" href={reservationCalendarUrl(restaurant, createReservation.data)}>
+              <CalendarDots size={18} weight="duotone" />
+              {c.downloadIcs}
+            </a>
+            <a className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card)] px-4 text-sm font-medium transition-colors hover:bg-[var(--muted)]" href={googleCalendarUrl(restaurant, createReservation.data.reservation)} rel="noreferrer" target="_blank">
+              <CalendarDots size={18} weight="duotone" />
+              {c.calendar}
+            </a>
+          </div>
         </div>
       ) : (
-        <div className="grid gap-3">
-          <SummaryRow label={c.party} value={String(props.partySize)} />
-          <SummaryRow label={c.date} value={DateTime.fromISO(props.date).setLocale(props.locale).toFormat("DDDD")} />
-          <SummaryRow label={c.time} value={props.time ? DateTime.fromISO(props.time).setZone(props.restaurant.timezone).toFormat("HH:mm") : "-"} />
-          <SummaryRow label={c.zone} value={props.selectedZone?.name ?? c.anyZone} />
+        <div className="grid gap-4">
+          <div className="rounded-[var(--radius-md)] border border-[var(--border)] px-4">
+            <SummaryRow label={c.party} value={String(props.partySize)} />
+            <SummaryRow label={c.date} value={DateTime.fromISO(props.date).setLocale(props.locale).toFormat("DDDD")} />
+            <SummaryRow label={c.time} value={props.time ? DateTime.fromISO(props.time).setZone(props.restaurant.timezone).toFormat("HH:mm") : "-"} />
+            <SummaryRow label={c.zone} value={props.selectedZone?.name ?? c.anyZone} />
+          </div>
           {createReservation.error ? (
-            <div className="rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--danger)_10%,var(--card-raised))] p-4 text-sm text-[var(--danger)]">
+            <div className="rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--danger)_30%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_8%,var(--card))] p-4 text-sm text-[var(--danger)]">
               {createReservation.error.message}
             </div>
           ) : null}
@@ -853,12 +829,12 @@ function WaitlistForm({
 function StepFrame({ body, children, icon, title }: { body: string; children: React.ReactNode; icon: React.ReactNode; title: string }) {
   return (
     <section className="reveal-in grid gap-6">
-      <div className="grid gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded-[var(--radius-sm)] bg-[var(--muted)] text-[var(--accent)]">{icon}</div>
-        <div>
-          <h3 className="text-4xl font-semibold leading-tight">{title}</h3>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">{body}</p>
-        </div>
+      <div className="grid gap-2">
+        <span className="text-[var(--accent)]" aria-hidden>
+          {icon}
+        </span>
+        <h3 className="text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">{title}</h3>
+        <p className="max-w-xl text-sm leading-7 text-[var(--muted-foreground)]">{body}</p>
       </div>
       {children}
     </section>
@@ -880,7 +856,7 @@ function QuickDates({
         const date = DateTime.fromISO(initialDate).plus({ days: offset });
         return (
           <button
-            className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card-raised)] px-3 py-3 text-left transition-all duration-500 ease-[var(--ease-press)] hover:-translate-y-0.5 hover:border-[var(--border-strong)]"
+            className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] px-3 py-3 text-left transition-colors duration-150 hover:border-[var(--border-strong)] hover:bg-[var(--muted)]"
             key={offset}
             onClick={() => setDate(date.toISODate() ?? initialDate)}
             type="button"
@@ -896,21 +872,24 @@ function QuickDates({
 
 function SummaryItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[1.75rem_1fr] gap-2 rounded-[var(--radius-sm)] bg-[var(--card-raised)] p-3">
-      <span className="text-[var(--accent)]">{icon}</span>
-      <span>
-        <span className="block text-xs text-[var(--muted-foreground)]">{label}</span>
-        <span className="mt-0.5 block text-sm font-semibold">{value}</span>
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--muted)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)]"
+      title={label}
+    >
+      <span className="text-[var(--accent)]" aria-hidden>
+        {icon}
       </span>
-    </div>
+      <span className="sr-only">{label}: </span>
+      {value}
+    </span>
   );
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card-raised)] px-3 py-3 text-sm">
+    <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] py-3 text-sm last:border-b-0">
       <span className="text-[var(--muted-foreground)]">{label}</span>
-      <span className="text-right font-semibold">{value}</span>
+      <span className="text-right font-medium">{value}</span>
     </div>
   );
 }
