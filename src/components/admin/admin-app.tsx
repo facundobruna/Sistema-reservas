@@ -11,17 +11,23 @@ import {
   CheckCircle,
   Clock,
   ClipboardText,
+  Code,
+  Copy,
   CreditCard,
   ForkKnife,
   GearSix,
+  InstagramLogo,
+  LinkSimple,
   MagnifyingGlass,
   MapPin,
   Plus,
+  QrCode,
   SignOut,
   StackPlus,
   Storefront,
   UsersThree,
   WarningCircle,
+  WhatsappLogo,
   XCircle
 } from "@phosphor-icons/react";
 import { DateTime } from "luxon";
@@ -816,6 +822,8 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
 
   const restaurantSettings = (summary?.restaurant?.settings as Record<string, unknown> | undefined) ?? {};
   const branding = (restaurantSettings.branding as Record<string, unknown> | undefined) ?? {};
+  const restaurantName = text(summary?.restaurant, "name", "Restaurante");
+  const restaurantSlug = text(summary?.restaurant, "slug", "demo-bistro");
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
@@ -999,48 +1007,183 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
         </div>
       </section>
 
-      <Panel className="reveal-in reveal-delay-2 xl:sticky xl:top-4 xl:self-start">
-        <div className="grid gap-5 p-4 sm:p-5">
-          <div>
-            <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Identidad publica</p>
-            <h3 className="mt-1 text-2xl font-semibold">Branding del restaurante</h3>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
-              Estos datos alimentan el booking publico sin bifurcar el producto.
-            </p>
-          </div>
-          <form
-            className="grid gap-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const data = new FormData(event.currentTarget);
-              settings.mutate({
-                name: String(data.get("name") || ""),
-                timezone: String(data.get("timezone") || ""),
-                settings: {
-                  branding: {
-                    ...branding,
-                    accent: String(data.get("accent") || "#8e3f24"),
-                    heroImageUrl: String(data.get("heroImageUrl") || "") || null,
-                    logoUrl: String(data.get("logoUrl") || "") || null
+      <aside className="grid gap-4 xl:sticky xl:top-4 xl:self-start">
+        <DistributionPanel restaurantName={restaurantName} restaurantSlug={restaurantSlug} />
+
+        <Panel className="reveal-in reveal-delay-2">
+          <div className="grid gap-5 p-4 sm:p-5">
+            <div>
+              <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Identidad publica</p>
+              <h3 className="mt-1 text-2xl font-semibold">Branding del restaurante</h3>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
+                Estos datos alimentan el booking publico sin bifurcar el producto.
+              </p>
+            </div>
+            <form
+              className="grid gap-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                settings.mutate({
+                  name: String(data.get("name") || ""),
+                  timezone: String(data.get("timezone") || ""),
+                  settings: {
+                    branding: {
+                      ...branding,
+                      accent: String(data.get("accent") || "#8e3f24"),
+                      heroImageUrl: String(data.get("heroImageUrl") || "") || null,
+                      logoUrl: String(data.get("logoUrl") || "") || null
+                    }
                   }
-                }
-              });
-            }}
-          >
-            <Field label="Nombre publico"><input className={inputClassName} defaultValue={text(summary?.restaurant, "name")} name="name" /></Field>
-            <Field label="Timezone"><input className={inputClassName} defaultValue={text(summary?.restaurant, "timezone")} name="timezone" /></Field>
-            <Field label="Color acento"><input className={`${inputClassName} h-12 p-1`} defaultValue={String(branding.accent ?? "#8e3f24")} name="accent" type="color" /></Field>
-            <Field label="Hero image URL"><input className={inputClassName} defaultValue={String(branding.heroImageUrl ?? "")} name="heroImageUrl" /></Field>
-            <Field label="Logo URL"><input className={inputClassName} defaultValue={String(branding.logoUrl ?? "")} name="logoUrl" /></Field>
-            {settings.error ? <p className="text-sm text-[var(--danger)]">{settings.error.message}</p> : null}
-            {settings.isSuccess ? <p className="text-sm text-[var(--success)]">Identidad actualizada.</p> : null}
-            <Button disabled={settings.isPending} type="submit">
-              <Check size={18} weight="bold" />
-              Guardar identidad
-            </Button>
-          </form>
+                });
+              }}
+            >
+              <Field label="Nombre publico"><input className={inputClassName} defaultValue={text(summary?.restaurant, "name")} name="name" /></Field>
+              <Field label="Timezone"><input className={inputClassName} defaultValue={text(summary?.restaurant, "timezone")} name="timezone" /></Field>
+              <Field label="Color acento"><input className={`${inputClassName} h-12 p-1`} defaultValue={String(branding.accent ?? "#8e3f24")} name="accent" type="color" /></Field>
+              <Field label="Hero image URL"><input className={inputClassName} defaultValue={String(branding.heroImageUrl ?? "")} name="heroImageUrl" /></Field>
+              <Field label="Logo URL"><input className={inputClassName} defaultValue={String(branding.logoUrl ?? "")} name="logoUrl" /></Field>
+              {settings.error ? <p className="text-sm text-[var(--danger)]">{settings.error.message}</p> : null}
+              {settings.isSuccess ? <p className="text-sm text-[var(--success)]">Identidad actualizada.</p> : null}
+              <Button disabled={settings.isPending} type="submit">
+                <Check size={18} weight="bold" />
+                Guardar identidad
+              </Button>
+            </form>
+          </div>
+        </Panel>
+      </aside>
+    </div>
+  );
+}
+
+function DistributionPanel({ restaurantName, restaurantSlug }: { restaurantName: string; restaurantSlug: string }) {
+  const [origin] = useState(() =>
+    typeof window === "undefined" ? (process.env.NEXT_PUBLIC_APP_URL ?? "https://tu-dominio.com") : window.location.origin
+  );
+  const [copied, setCopied] = useState("");
+
+  const baseUrl = origin;
+  const bookingUrl = `${baseUrl}/r/${restaurantSlug}`;
+  const embedScript = `<script async src="${baseUrl}/embed/${restaurantSlug}/script"></script>`;
+  const reserveButton = `<a href="${bookingUrl}" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:8px;background:#111;color:#fff;text-decoration:none;font-weight:600">Reservar</a>`;
+  const whatsappReply = `Hola! Para reservar en ${restaurantName}, toca este link: ${bookingUrl}\n\nEs rapido: sin cuenta, DNI, sena ni app.`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=184x184&margin=12&data=${encodeURIComponent(bookingUrl)}`;
+
+  async function copyValue(label: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(label);
+      window.setTimeout(() => setCopied(""), 1400);
+    } catch {
+      setCopied("error");
+      window.setTimeout(() => setCopied(""), 1400);
+    }
+  }
+
+  return (
+    <Panel className="reveal-in reveal-delay-1">
+      <div className="grid gap-5 p-4 sm:p-5">
+        <div>
+          <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Distribucion</p>
+          <h3 className="mt-1 text-2xl font-semibold">Un link, todos los canales</h3>
+          <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
+            Instagram, web, QR y WhatsApp llevan al mismo flujo corto de reserva.
+          </p>
         </div>
-      </Panel>
+
+        <DistributionCopy
+          copied={copied}
+          description="Pegalo en la bio o en cualquier link-in-bio."
+          icon={<InstagramLogo size={20} weight="duotone" />}
+          label="Bio de Instagram"
+          value={bookingUrl}
+          onCopy={copyValue}
+        />
+        <DistributionCopy
+          copied={copied}
+          description="Boton liviano para el sitio del restaurante."
+          icon={<LinkSimple size={20} weight="duotone" />}
+          label="Boton Reservar"
+          value={reserveButton}
+          onCopy={copyValue}
+        />
+        <DistributionCopy
+          copied={copied}
+          description="Embed completo del booking dentro de la web."
+          icon={<Code size={20} weight="duotone" />}
+          label="Embed web"
+          value={embedScript}
+          onCopy={copyValue}
+        />
+        <DistributionCopy
+          copied={copied}
+          description="Respuesta automatica simple para WhatsApp Business."
+          icon={<WhatsappLogo size={20} weight="duotone" />}
+          label="Auto-respuesta WhatsApp"
+          value={whatsappReply}
+          onCopy={copyValue}
+        />
+
+        <div className="grid gap-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card-raised)] p-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[var(--accent)]">
+              <QrCode size={20} weight="duotone" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">QR para mesa o puerta</p>
+              <p className="text-xs leading-5 text-[var(--muted-foreground)]">Descargalo desde el navegador o copia el link del QR.</p>
+            </div>
+          </div>
+          <div className="grid place-items-center rounded-[var(--radius-sm)] bg-white p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt={`QR de reservas para ${restaurantName}`} className="h-44 w-44" src={qrUrl} />
+          </div>
+          <Button size="sm" variant="secondary" onClick={() => copyValue("QR", qrUrl)}>
+            <Copy size={15} weight="bold" />
+            {copied === "QR" ? "Copiado" : "Copiar link QR"}
+          </Button>
+        </div>
+
+        {copied === "error" ? <p className="text-xs text-[var(--danger)]">No pudimos copiar automaticamente.</p> : null}
+      </div>
+    </Panel>
+  );
+}
+
+function DistributionCopy({
+  copied,
+  description,
+  icon,
+  label,
+  value,
+  onCopy
+}: {
+  copied: string;
+  description: string;
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onCopy: (label: string, value: string) => void;
+}) {
+  return (
+    <div className="grid gap-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card-raised)] p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 gap-2">
+          <span className="mt-0.5 shrink-0 text-[var(--accent)]">{icon}</span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">{label}</p>
+            <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">{description}</p>
+          </div>
+        </div>
+        <Button size="sm" variant="secondary" onClick={() => onCopy(label, value)}>
+          <Copy size={15} weight="bold" />
+          {copied === label ? "Copiado" : "Copiar"}
+        </Button>
+      </div>
+      <pre className="max-h-28 overflow-auto rounded-[var(--radius-sm)] bg-[var(--muted)] p-3 text-xs leading-5 text-[var(--foreground)]">
+        {value}
+      </pre>
     </div>
   );
 }

@@ -18,10 +18,10 @@ export default async function EmbedPage({ params }: { params: Promise<{ slug: st
         <div className="surface-core grid gap-6 p-5 sm:p-8">
           <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
             <div>
-              <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Embed listo</p>
+              <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Distribucion web</p>
               <h1 className="mt-2 max-w-3xl text-5xl font-semibold leading-none">{restaurant.name}</h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">
-                Pega cualquiera de estos snippets en el sitio del restaurante para abrir el flujo de reserva con disponibilidad real.
+                Pega cualquiera de estos snippets en el sitio del restaurante. El boton o embed llevan al mismo flujo rapido, sin cuenta ni app.
               </p>
             </div>
             <Link

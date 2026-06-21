@@ -23,7 +23,8 @@ import { Badge, EmptyState, Field, Skeleton, inputClassName } from "@/components
 import type { PublicRestaurant } from "@/features/repositories";
 import type { Locale } from "@/lib/i18n";
 
-const steps = ["party", "date", "time", "zone", "details", "requests", "confirm"] as const;
+const steps = ["party", "slot", "details", "confirm"] as const;
+const flowSteps = ["party", "slot", "details"] as const;
 type Step = (typeof steps)[number];
 
 type AvailabilityResponse = {
@@ -56,14 +57,17 @@ type WaitlistResponse = {
 
 const copy = {
   es: {
-    shellKicker: "Reserva guiada",
-    shellTitle: "Elegimos la mejor mesa disponible para tu grupo.",
-    shellBody: "El horario se vuelve a validar al confirmar, asi evitamos dobles reservas incluso cuando varias personas reservan al mismo tiempo.",
+    shellKicker: "Reserva en 3 toques",
+    shellTitle: "Sin login, sin DNI, sin sena y sin app.",
+    shellBody: "Elegis grupo, horario y contacto. El sistema valida disponibilidad en vivo antes de confirmar.",
     stepWord: "Paso",
     summary: "Tu seleccion",
     party: "Comensales",
-    partyTitle: "¿Cuantas personas vienen?",
-    partyBody: "Usamos el tamano del grupo para sugerir una unidad que no desperdicie mesas grandes.",
+    slot: "Horario",
+    partyTitle: "Cuantas personas vienen?",
+    partyBody: "Con ese dato buscamos una mesa disponible sin pedirte cuenta ni registro.",
+    slotTitle: "Elegir dia y horario",
+    slotBody: "Toca una fecha, opcionalmente una zona, y reserva sobre disponibilidad real.",
     date: "Fecha",
     dateTitle: "Elegí el día",
     dateBody: "Mostramos horarios en la zona horaria del restaurante.",
@@ -75,7 +79,7 @@ const copy = {
     zoneBody: "Si no tenes preferencia, podemos asignarte el mejor lugar disponible.",
     details: "Datos",
     detailsTitle: "Datos de contacto",
-    detailsBody: "El telefono es necesario para gestionar la reserva y enviar recordatorios.",
+    detailsBody: "Solo necesitamos nombre y telefono. Email y notas son opcionales.",
     requests: "Pedidos",
     requestsTitle: "Algo que el equipo deba saber",
     requestsBody: "Celebraciones, accesibilidad o una mesa tranquila. No prometemos disponibilidad, pero lo dejamos visible.",
@@ -101,9 +105,9 @@ const copy = {
     noPreference: "Sin preferencia",
     selected: "Seleccionado",
     back: "Atras",
-    next: "Continuar",
+    next: "Seguir",
     confirming: "Confirmando",
-    complete: "Confirmar reserva",
+    complete: "Confirmar sin cuenta",
     reservationCode: "Codigo de reserva",
     editSelection: "Editar seleccion",
     calendar: "Abrir en Google Calendar",
@@ -117,17 +121,20 @@ const copy = {
     waitlistCode: "Codigo de lista",
     service: "Servicio",
     unavailable: "Ese horario acaba de ocuparse. Elegí otro para seguir.",
-    trust: ["Disponibilidad en vivo", "Sin doble booking", "Recordatorio por email"]
+    trust: ["Sin login", "Sin DNI", "Sin sena", "Sin app"]
   },
   en: {
-    shellKicker: "Guided booking",
-    shellTitle: "We choose the best available table for your party.",
-    shellBody: "The time is checked again at confirmation, so the room cannot be double-booked even under concurrent bookings.",
+    shellKicker: "3-tap booking",
+    shellTitle: "No login, no ID, no deposit, no app.",
+    shellBody: "Choose party size, time, and contact. Availability is checked live before confirmation.",
     stepWord: "Step",
     summary: "Your selection",
     party: "Guests",
+    slot: "Time",
     partyTitle: "How many guests are coming?",
-    partyBody: "Party size helps us suggest a table unit without wasting larger tables.",
+    partyBody: "This is enough to find a table without making you create an account.",
+    slotTitle: "Choose date and time",
+    slotBody: "Tap a date, optionally pick an area, and book against live availability.",
     date: "Date",
     dateTitle: "Choose the day",
     dateBody: "Times are shown in the restaurant local timezone.",
@@ -139,7 +146,7 @@ const copy = {
     zoneBody: "If you have no preference, we can assign the best available spot.",
     details: "Details",
     detailsTitle: "Contact details",
-    detailsBody: "Phone is required to manage the booking and send reminders.",
+    detailsBody: "We only need name and phone. Email and notes are optional.",
     requests: "Requests",
     requestsTitle: "Anything the team should know",
     requestsBody: "Celebrations, accessibility, or a quiet table. We cannot promise availability, but the team will see it.",
@@ -165,9 +172,9 @@ const copy = {
     noPreference: "No preference",
     selected: "Selected",
     back: "Back",
-    next: "Continue",
+    next: "Next",
     confirming: "Confirming",
-    complete: "Confirm reservation",
+    complete: "Confirm without account",
     reservationCode: "Reservation code",
     editSelection: "Edit selection",
     calendar: "Open in Google Calendar",
@@ -181,7 +188,7 @@ const copy = {
     waitlistCode: "Waitlist code",
     service: "Service",
     unavailable: "That time was just taken. Choose another time to continue.",
-    trust: ["Live availability", "No double booking", "Email reminder"]
+    trust: ["No login", "No ID", "No deposit", "No app"]
   }
 } as const;
 
@@ -236,6 +243,8 @@ export function BookingWizard({ restaurant, locale }: { restaurant: PublicRestau
 
   const params = useMemo(() => new URLSearchParams(search.toString()), [search]);
   const currentIndex = Math.max(0, steps.indexOf(step));
+  const visibleStepIndex =
+    step === "confirm" ? flowSteps.length - 1 : Math.max(0, flowSteps.indexOf(step as (typeof flowSteps)[number]));
   const needsZone = restaurant.zones.length > 1;
   const selectedZone = restaurant.zones.find((zone) => zone.id === zoneId);
   const selectedService = restaurant.services.find((service) => service.id === serviceId);
@@ -271,12 +280,10 @@ export function BookingWizard({ restaurant, locale }: { restaurant: PublicRestau
   }
 
   function nextStep() {
-    if (step === "time" && !needsZone) return "details";
     return steps[currentIndex + 1] ?? "confirm";
   }
 
   function prevStep() {
-    if (step === "details" && !needsZone) return "time";
     return steps[currentIndex - 1] ?? "party";
   }
 
@@ -327,25 +334,22 @@ export function BookingWizard({ restaurant, locale }: { restaurant: PublicRestau
   const selectedSlot = availability.data?.slots.find((slot) => slot.time === time);
   const canProceed =
     (step === "party" && partySize > 0) ||
-    (step === "date" && Boolean(date)) ||
-    (step === "time" && Boolean(selectedSlot)) ||
-    (step === "zone" && (!needsZone || Boolean(zoneId))) ||
-    (step === "details" && nameValid && phoneValid && emailValid) ||
-    step === "requests";
+    (step === "slot" && Boolean(selectedSlot)) ||
+    (step === "details" && nameValid && phoneValid && emailValid);
 
   return (
     <div className="reveal-in reveal-delay-1">
       <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-soft)]">
         <div className="flex items-center justify-between gap-4 bg-[linear-gradient(to_bottom,var(--accent-soft),transparent)] px-5 pb-4 pt-5 sm:px-7 sm:pt-6">
           <p className="font-mono text-xs text-[var(--muted-foreground)]">
-            {c.stepWord} {currentIndex + 1} / {steps.length}
+            {step === "confirm" && createReservation.data ? c.confirmedTitle : `${c.stepWord} ${visibleStepIndex + 1} / ${flowSteps.length}`}
           </p>
           <div className="flex items-center gap-1.5">
-            {steps.map((item, index) => (
+            {flowSteps.map((item, index) => (
               <span
                 aria-label={c[item]}
                 className={`h-1 rounded-full transition-all duration-300 ease-[var(--ease-press)] ${
-                  index <= currentIndex ? "w-6 bg-[var(--accent)]" : "w-3 bg-[var(--border-strong)]"
+                  index <= visibleStepIndex ? "w-6 bg-[var(--accent)]" : "w-3 bg-[var(--border-strong)]"
                 }`}
                 key={item}
               />
@@ -399,18 +403,26 @@ export function BookingWizard({ restaurant, locale }: { restaurant: PublicRestau
           </Button>
           {step === "confirm" ? (
             createReservation.data ? (
-              <Button variant="secondary" onClick={() => go("time")}>
+              <Button variant="secondary" onClick={() => go("slot")}>
                 {c.editSelection}
               </Button>
             ) : (
               <Button
-                disabled={!time || !nameValid || !phoneValid || !emailValid || createReservation.isPending || (needsZone && !zoneId)}
+                disabled={!time || !nameValid || !phoneValid || !emailValid || createReservation.isPending}
                 onClick={() => createReservation.mutate()}
               >
                 <CheckCircle size={18} weight="bold" />
                 {createReservation.isPending ? c.confirming : c.complete}
               </Button>
             )
+          ) : step === "details" ? (
+            <Button
+              disabled={!nameValid || !phoneValid || !emailValid || createReservation.isPending || !time}
+              onClick={() => createReservation.mutate()}
+            >
+              <CheckCircle size={18} weight="bold" />
+              {createReservation.isPending ? c.confirming : c.complete}
+            </Button>
           ) : (
             <Button disabled={!canProceed || createReservation.isPending} onClick={() => go(nextStep())}>
               {c.next}
@@ -505,128 +517,119 @@ function StepContent(props: {
     );
   }
 
-  if (step === "date") {
+  if (step === "slot") {
     return (
-      <StepFrame body={c.dateBody} icon={<CalendarDots size={24} weight="duotone" />} title={c.dateTitle}>
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <Field label={c.date}>
-            <input className={inputClassName} min={initialDate} type="date" value={date} onChange={(event) => setParam("date", event.target.value)} />
-          </Field>
-          <Badge>{restaurant.timezone}</Badge>
-        </div>
-        <QuickDates initialDate={initialDate} locale={locale} setDate={(value) => setParam("date", value)} />
-      </StepFrame>
-    );
-  }
-
-  if (step === "time") {
-    return (
-      <StepFrame body={c.timeBody} icon={<Clock size={24} weight="duotone" />} title={c.timeTitle}>
-        {availability.isLoading ? (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {Array.from({ length: 9 }).map((_, index) => (
-              <Skeleton className="h-14" key={index} />
-            ))}
+      <StepFrame body={c.slotBody} icon={<Clock size={24} weight="duotone" />} title={c.slotTitle}>
+        <div className="grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+            <Field label={c.date}>
+              <input
+                className={inputClassName}
+                min={initialDate}
+                type="date"
+                value={date}
+                onChange={(event) => setParams({ date: event.target.value, time: null, serviceId: null })}
+              />
+            </Field>
+            <Badge>{restaurant.timezone}</Badge>
           </div>
-        ) : null}
-        {availability.isError ? (
-          <EmptyState
-            title={c.errorSlots}
-            description={c.unavailable}
-            action={
-              <Button variant="secondary" onClick={() => availability.refetch()}>
-                <WarningCircle size={18} weight="duotone" />
-                {c.retry}
-              </Button>
-            }
-          />
-        ) : null}
-        {!availability.isLoading && !availability.isError && availability.data?.slots.length === 0 ? (
-          <div className="grid gap-3">
-            <EmptyState title={c.noSlotsTitle} description={c.noSlotsBody} />
-            <WaitlistForm
-              c={c}
-              customer={customer}
-              date={date}
-              emailValid={emailValid}
-              nameValid={nameValid}
-              partySize={partySize}
-              phoneValid={phoneValid}
-              restaurant={restaurant}
-              serviceId={serviceId}
-              setCustomer={setCustomer}
-              setSpecialRequests={setSpecialRequests}
-              specialRequests={specialRequests}
-              zoneId={zoneId}
+          <QuickDates initialDate={initialDate} locale={locale} setDate={(value) => setParams({ date: value, time: null, serviceId: null })} />
+          {props.needsZone ? (
+            <div className="grid gap-2">
+              <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">{c.zone}</p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                <button
+                  className={`min-h-10 shrink-0 rounded-[var(--radius-sm)] border px-3 text-sm font-medium transition-colors duration-150 ${
+                    !zoneId
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                      : "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-[var(--border-strong)]"
+                  }`}
+                  onClick={() => setParams({ zoneId: null, time: null, serviceId: null })}
+                  type="button"
+                >
+                  {c.anyZone}
+                </button>
+                {restaurant.zones.map((zone) => {
+                  const active = zoneId === zone.id;
+                  return (
+                    <button
+                      className={`min-h-10 shrink-0 rounded-[var(--radius-sm)] border px-3 text-sm font-medium transition-colors duration-150 ${
+                        active
+                          ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                          : "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-[var(--border-strong)]"
+                      }`}
+                      key={zone.id}
+                      onClick={() => setParams({ zoneId: zone.id, time: null, serviceId: null })}
+                      type="button"
+                    >
+                      {zone.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+          {availability.isLoading ? (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {Array.from({ length: 9 }).map((_, index) => (
+                <Skeleton className="h-14" key={index} />
+              ))}
+            </div>
+          ) : null}
+          {availability.isError ? (
+            <EmptyState
+              title={c.errorSlots}
+              description={c.unavailable}
+              action={
+                <Button variant="secondary" onClick={() => availability.refetch()}>
+                  <WarningCircle size={18} weight="duotone" />
+                  {c.retry}
+                </Button>
+              }
             />
+          ) : null}
+          {!availability.isLoading && !availability.isError && availability.data?.slots.length === 0 ? (
+            <div className="grid gap-3">
+              <EmptyState title={c.noSlotsTitle} description={c.noSlotsBody} />
+              <WaitlistForm
+                c={c}
+                customer={customer}
+                date={date}
+                emailValid={emailValid}
+                nameValid={nameValid}
+                partySize={partySize}
+                phoneValid={phoneValid}
+                restaurant={restaurant}
+                serviceId={serviceId}
+                setCustomer={setCustomer}
+                setSpecialRequests={setSpecialRequests}
+                specialRequests={specialRequests}
+                zoneId={zoneId}
+              />
+            </div>
+          ) : null}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {availability.data?.slots.map((slot) => {
+              const local = DateTime.fromISO(slot.time).setZone(restaurant.timezone);
+              const service = restaurant.services.find((item) => item.id === slot.serviceId);
+              const active = time === slot.time;
+              return (
+                <button
+                  className={`grid gap-0.5 rounded-[var(--radius-md)] border px-4 py-3 text-left transition-colors duration-150 ${
+                    active
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                      : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--border-strong)] hover:bg-[var(--muted)]"
+                  }`}
+                  key={slot.time}
+                  onClick={() => setParams({ time: slot.time, serviceId: slot.serviceId })}
+                  type="button"
+                >
+                  <span className={`font-mono text-base font-semibold ${active ? "text-[var(--accent)]" : "text-[var(--foreground)]"}`}>{local.toFormat("HH:mm")}</span>
+                  <span className="text-xs text-[var(--muted-foreground)]">{service?.name ?? c.service}</span>
+                </button>
+              );
+            })}
           </div>
-        ) : null}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {availability.data?.slots.map((slot) => {
-            const local = DateTime.fromISO(slot.time).setZone(restaurant.timezone);
-            const service = restaurant.services.find((item) => item.id === slot.serviceId);
-            const active = time === slot.time;
-            return (
-              <button
-                className={`grid gap-0.5 rounded-[var(--radius-md)] border px-4 py-3 text-left transition-colors duration-150 ${
-                  active
-                    ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                    : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--border-strong)] hover:bg-[var(--muted)]"
-                }`}
-                key={slot.time}
-                onClick={() => setParams({ time: slot.time, serviceId: slot.serviceId })}
-                type="button"
-              >
-                <span className={`font-mono text-base font-semibold ${active ? "text-[var(--accent)]" : "text-[var(--foreground)]"}`}>{local.toFormat("HH:mm")}</span>
-                <span className="text-xs text-[var(--muted-foreground)]">{service?.name ?? c.service}</span>
-              </button>
-            );
-          })}
-        </div>
-      </StepFrame>
-    );
-  }
-
-  if (step === "zone") {
-    return (
-      <StepFrame body={c.zoneBody} icon={<MapPin size={24} weight="duotone" />} title={c.zoneTitle}>
-        <div className="grid gap-2">
-          <button
-            className={`flex items-center justify-between gap-3 rounded-[var(--radius-md)] border px-4 py-4 text-left transition-colors duration-150 ${
-              !zoneId
-                ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--border-strong)] hover:bg-[var(--muted)]"
-            }`}
-            onClick={() => setParam("zoneId", null)}
-            type="button"
-          >
-            <span>
-              <span className={`block font-medium ${!zoneId ? "text-[var(--accent)]" : "text-[var(--foreground)]"}`}>{c.noPreference}</span>
-              <span className="mt-0.5 block text-sm text-[var(--muted-foreground)]">{c.anyZone}</span>
-            </span>
-            {!zoneId ? <CheckCircle size={20} weight="fill" className="shrink-0 text-[var(--accent)]" /> : null}
-          </button>
-          {restaurant.zones.map((zone) => {
-            const active = zoneId === zone.id;
-            return (
-              <button
-                className={`flex items-center justify-between gap-3 rounded-[var(--radius-md)] border px-4 py-4 text-left transition-colors duration-150 ${
-                  active
-                    ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                    : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--border-strong)] hover:bg-[var(--muted)]"
-                }`}
-                key={zone.id}
-                onClick={() => setParam("zoneId", zone.id)}
-                type="button"
-              >
-                <span>
-                  <span className={`block font-medium ${active ? "text-[var(--accent)]" : "text-[var(--foreground)]"}`}>{zone.name}</span>
-                  <span className="mt-0.5 block text-sm text-[var(--muted-foreground)]">{active ? c.selected : c.zone}</span>
-                </span>
-                {active ? <CheckCircle size={20} weight="fill" className="shrink-0 text-[var(--accent)]" /> : null}
-              </button>
-            );
-          })}
         </div>
       </StepFrame>
     );
@@ -660,21 +663,14 @@ function StepContent(props: {
               onChange={(event) => setCustomer({ ...customer, phone: event.target.value })}
             />
           </Field>
+          <Field hint={c.requestsBody} label={c.specialRequests}>
+            <textarea
+              className={`${inputClassName} min-h-24 py-3`}
+              value={specialRequests}
+              onChange={(event) => setSpecialRequests(event.target.value)}
+            />
+          </Field>
         </div>
-      </StepFrame>
-    );
-  }
-
-  if (step === "requests") {
-    return (
-      <StepFrame body={c.requestsBody} icon={<NotePencil size={24} weight="duotone" />} title={c.requestsTitle}>
-        <Field label={c.specialRequests}>
-          <textarea
-            className={`${inputClassName} min-h-40 py-3`}
-            value={specialRequests}
-            onChange={(event) => setSpecialRequests(event.target.value)}
-          />
-        </Field>
       </StepFrame>
     );
   }

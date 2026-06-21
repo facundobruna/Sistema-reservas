@@ -78,14 +78,14 @@ export default async function RestaurantBookingPage({
             )}
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)]">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
-              {locale === "en" ? "Live availability" : "Disponibilidad en vivo"}
+              {locale === "en" ? "No login required" : "Sin cuenta obligatoria"}
             </span>
           </div>
           <h1 className="mt-5 text-4xl font-semibold tracking-[-0.03em] sm:text-5xl">{restaurant.name}</h1>
           <p className="mt-3 max-w-md text-sm leading-7 text-[var(--muted-foreground)] sm:text-base">
             {locale === "en"
-              ? "Pick a time below. The restaurant confirms against its live dining-room inventory, so there is no double booking."
-              : "Elegi un horario abajo. El restaurante confirma contra el inventario vivo del salon, sin dobles reservas."}
+              ? "Book in a few taps. No account, ID, deposit, or app download."
+              : "Reserva en pocos toques. Sin cuenta, DNI, sena ni app que bajar."}
           </p>
         </header>
 
