@@ -16,9 +16,9 @@
   --border-strong: #cbccd4;
   --card: #ffffff;
   --card-raised: #ffffff;
-  --accent: #e85513;
+  --accent: #1a8f50;
   --accent-foreground: #ffffff;
-  --accent-soft: #fdf1ea;
+  --accent-soft: #eaf5ee;
   --accent-ring: color-mix(in srgb, var(--accent) 26%, transparent);
   --danger: #d83a3a;
   --warning: #b86d0e;
@@ -47,8 +47,8 @@
     --border-strong: #3a3a40;
     --card: #151517;
     --card-raised: #1c1c1f;
-    --accent: #fb7a3c;
-    --accent-foreground: #1b0f06;
+    --accent: #3ecf6e;
+    --accent-foreground: #0a1f12;
     --accent-soft: color-mix(in srgb, var(--accent) 15%, var(--card));
     --accent-ring: color-mix(in srgb, var(--accent) 40%, transparent);
     --danger: #f87171;
@@ -138,7 +138,7 @@ li {
 }
 
 .booking-brand {
-  --accent: var(--restaurant-accent, #e85513);
+  --accent: var(--restaurant-accent, #1a8f50);
   --accent-soft: color-mix(in srgb, var(--accent) 12%, var(--card));
   --accent-ring: color-mix(in srgb, var(--accent) 28%, transparent);
 }

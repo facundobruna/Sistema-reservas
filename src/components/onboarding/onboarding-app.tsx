@@ -181,12 +181,12 @@ export function OnboardingApp() {
             <div className="relative grid min-h-80 content-between overflow-hidden rounded-[calc(var(--radius-xl)-0.375rem)] bg-[#261913] p-6 text-[#fff7ec] sm:p-8">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(211,135,82,0.28),transparent_22rem),radial-gradient(circle_at_86%_78%,rgba(255,247,236,0.13),transparent_24rem)]" />
               <div className="relative">
-                <Badge className="border-white/15 bg-white/10 text-[#f1d6c2]">Onboarding self-serve</Badge>
+                <Badge className="border-white/15 bg-white/10 text-[#f1d6c2]">Alta de restaurante</Badge>
                 <h1 className="mt-6 max-w-xl text-5xl font-semibold leading-none md:text-6xl">
                   Tu restaurante operativo antes de abrir el turno.
                 </h1>
                 <p className="mt-5 max-w-md text-sm leading-7 text-[#ead8ca]">
-                  Creamos tenant, owner, salon, turnos, link publico y snippet de embed con defaults que despues podes ajustar en el panel.
+                  En pocos pasos tu restaurante queda listo para recibir reservas. Despues podes ajustar todo desde el panel.
                 </p>
               </div>
 
@@ -224,7 +224,7 @@ export function OnboardingApp() {
               <aside className="grid content-start gap-3 rounded-[var(--radius-lg)] bg-[color-mix(in_srgb,var(--muted)_46%,transparent)] p-4">
                 <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Resumen</p>
                 <SummaryItem icon={<Storefront size={17} weight="duotone" />} label="Restaurante" value={form.restaurantName || "Sin nombre"} />
-                <SummaryItem icon={<LinkSimple size={17} weight="duotone" />} label="Slug" value={form.slug || "-"} />
+                <SummaryItem icon={<LinkSimple size={17} weight="duotone" />} label="Link" value={form.slug || "-"} />
                 <SummaryItem icon={<MapPin size={17} weight="duotone" />} label="Zonas" value={String(zoneList.length)} />
                 <SummaryItem icon={<ForkKnife size={17} weight="duotone" />} label="Mesas" value={String(currentProfile.mesas)} />
                 <SummaryItem icon={<Clock size={17} weight="duotone" />} label="Turno" value={`${form.turnDurationMin} min`} />
@@ -266,13 +266,13 @@ function IdentityStep({
       <StepIntro
         icon={<Storefront size={24} weight="duotone" />}
         title="Datos base del local"
-        body="Con esto dejamos creado el tenant y el owner inicial. El slug define el link publico de reservas."
+        body="Con estos datos creamos tu restaurante y tu cuenta de acceso al panel."
       />
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Nombre del restaurante">
           <input className={inputClassName} value={form.restaurantName} onChange={(event) => updateName(event.target.value)} />
         </Field>
-        <Field label="Slug publico">
+        <Field hint="Solo letras, numeros y guiones. Asi va a quedar el link de reservas." label="Nombre en la web">
           <input
             className={inputClassName}
             value={form.slug}
@@ -282,16 +282,16 @@ function IdentityStep({
             }}
           />
         </Field>
-        <Field label="Nombre owner">
+        <Field label="Tu nombre">
           <input className={inputClassName} value={form.ownerName} onChange={(event) => update("ownerName", event.target.value)} />
         </Field>
-        <Field label="Email owner">
+        <Field label="Tu email">
           <input className={inputClassName} type="email" value={form.ownerEmail} onChange={(event) => update("ownerEmail", event.target.value)} />
         </Field>
         <Field hint="Minimo 8 caracteres." label="Password">
           <input className={inputClassName} type="password" value={form.password} onChange={(event) => update("password", event.target.value)} />
         </Field>
-        <Field label="Timezone">
+        <Field label="Zona horaria">
           <input className={inputClassName} value={form.timezone} onChange={(event) => update("timezone", event.target.value)} />
         </Field>
       </div>
@@ -299,10 +299,10 @@ function IdentityStep({
         <Field label="Color acento">
           <input className={`${inputClassName} h-12 p-1`} type="color" value={form.accent} onChange={(event) => update("accent", event.target.value)} />
         </Field>
-        <Field label="Hero image URL">
+        <Field label="Foto de portada (URL)">
           <input className={inputClassName} value={form.heroImageUrl} onChange={(event) => update("heroImageUrl", event.target.value)} />
         </Field>
-        <Field label="Logo URL">
+        <Field label="Logo (URL)">
           <input className={inputClassName} value={form.logoUrl} onChange={(event) => update("logoUrl", event.target.value)} />
         </Field>
       </div>
@@ -324,7 +324,7 @@ function RoomStep({
       <StepIntro
         icon={<ForkKnife size={24} weight="duotone" />}
         title="Salon y capacidad inicial"
-        body="Elegimos una maqueta de mesas que el equipo puede ajustar despues. Cada mesa nace con su unidad reservable."
+        body="Elegí el tamaño del salon. Siempre podes agregar o quitar mesas desde el panel."
       />
       <Field hint="Separalas con coma. Ej: Salon principal, Patio, Terraza." label="Zonas">
         <input className={inputClassName} value={form.zoneNames} onChange={(event) => update("zoneNames", event.target.value)} />
@@ -388,7 +388,7 @@ function ServicesStep({
         />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <Field label="Intervalo de slots">
+        <Field label="Cada cuanto se puede reservar">
           <select className={inputClassName} value={form.slotIntervalMin} onChange={(event) => update("slotIntervalMin", Number(event.target.value))}>
             <option value={15}>15 min</option>
             <option value={30}>30 min</option>
@@ -396,14 +396,14 @@ function ServicesStep({
             <option value={60}>60 min</option>
           </select>
         </Field>
-        <Field label="Duracion de mesa">
+        <Field label="Cuanto dura cada turno">
           <select className={inputClassName} value={form.turnDurationMin} onChange={(event) => update("turnDurationMin", Number(event.target.value))}>
             <option value={75}>75 min</option>
             <option value={90}>90 min</option>
             <option value={120}>120 min</option>
           </select>
         </Field>
-        <Field hint="Opcional. Cubiertos maximos por ventana." label="Pacing">
+        <Field hint="Opcional. Maximo de personas por franja horaria." label="Limite de cubiertos">
           <input className={inputClassName} min={1} type="number" value={form.pacingCap} onChange={(event) => update("pacingCap", event.target.value)} />
         </Field>
       </div>
@@ -425,12 +425,12 @@ function PublishStep({
       <StepIntro
         icon={<PaintBrush size={24} weight="duotone" />}
         title="Revisar y publicar"
-        body="Al crear el restaurante vas a quedar logueado como owner y vas a recibir el link de reserva y el embed."
+        body="Al finalizar, tu restaurante queda activo y ya podes empezar a recibir reservas."
       />
       <div className="grid gap-3">
         <ReviewRow label="Restaurante" value={form.restaurantName} />
         <ReviewRow label="Link" value={`/r/${form.slug}`} />
-        <ReviewRow label="Owner" value={`${form.ownerName} - ${form.ownerEmail}`} />
+        <ReviewRow label="Responsable" value={`${form.ownerName} - ${form.ownerEmail}`} />
         <ReviewRow label="Salon" value={`${currentProfile.label}, ${currentProfile.mesas} mesas, ${zoneList.length} zonas`} />
         <ReviewRow label="Servicios" value={[form.lunchEnabled ? "Almuerzo" : null, form.dinnerEnabled ? "Cena" : null].filter(Boolean).join(" + ")} />
       </div>
@@ -458,7 +458,7 @@ function OnboardingSuccess({ result }: { result: OnboardingResponse }) {
               </Badge>
               <h1 className="mt-5 max-w-3xl text-5xl font-semibold leading-none">{result.restaurant.name} ya puede recibir reservas.</h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">
-                Creamos {result.counts.zones} zonas, {result.counts.mesas} mesas, {result.counts.services} servicios y {result.counts.shifts} turnos. Tambien quedaste logueado como owner.
+                Creamos {result.counts.zones} zonas, {result.counts.mesas} mesas, {result.counts.services} servicios y {result.counts.shifts} turnos. Ya podes ingresar al panel con tus datos.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -466,20 +466,20 @@ function OnboardingSuccess({ result }: { result: OnboardingResponse }) {
                 Abrir panel
               </Link>
               <Link className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] px-4 text-sm font-semibold" href={result.links.bookingUrl}>
-                Ver booking
+                Ver pagina de reservas
               </Link>
             </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <SnippetCard copied={copied === "iframe"} label="Iframe" value={result.links.iframe} onCopy={() => copy("iframe", result.links.iframe)} />
-            <SnippetCard copied={copied === "script"} label="Script" value={result.links.script} onCopy={() => copy("script", result.links.script)} />
+            <SnippetCard copied={copied === "iframe"} label="Codigo para tu web" value={result.links.iframe} onCopy={() => copy("iframe", result.links.iframe)} />
+            <SnippetCard copied={copied === "script"} label="Codigo avanzado para tu web" value={result.links.script} onCopy={() => copy("script", result.links.script)} />
           </div>
 
           <div className="grid gap-3 rounded-[var(--radius-lg)] bg-[var(--muted)] p-4 sm:grid-cols-3">
             <SummaryItem icon={<LinkSimple size={17} weight="duotone" />} label="Booking" value={result.links.bookingUrl} />
-            <SummaryItem icon={<StackPlus size={17} weight="duotone" />} label="Embed" value={result.links.embedUrl} />
-            <SummaryItem icon={<UsersThree size={17} weight="duotone" />} label="Owner" value={result.staff.email} />
+            <SummaryItem icon={<StackPlus size={17} weight="duotone" />} label="Insertar en web" value={result.links.embedUrl} />
+            <SummaryItem icon={<UsersThree size={17} weight="duotone" />} label="Administrador" value={result.staff.email} />
           </div>
         </div>
       </section>

@@ -115,7 +115,7 @@ const statusCopy: Record<ReservationStatus, { label: string; tone: string }> = {
   seated: { label: "Sentada", tone: "border-[color-mix(in_srgb,var(--success)_42%,var(--border))] text-[var(--success)]" },
   completed: { label: "Completada", tone: "border-[color-mix(in_srgb,var(--success)_30%,var(--border))] text-[var(--muted-foreground)]" },
   cancelled: { label: "Cancelada", tone: "border-[color-mix(in_srgb,var(--danger)_34%,var(--border))] text-[var(--danger)]" },
-  no_show: { label: "No-show", tone: "border-[color-mix(in_srgb,var(--danger)_48%,var(--border))] text-[var(--danger)]" }
+  no_show: { label: "No vino", tone: "border-[color-mix(in_srgb,var(--danger)_48%,var(--border))] text-[var(--danger)]" }
 };
 
 const waitlistStatusCopy: Record<WaitlistStatus, { label: string; tone: string }> = {
@@ -218,7 +218,7 @@ export function AdminApp() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className="gap-1">
                     <Storefront size={14} weight="duotone" />
-                    Staff
+                    Personal
                   </Badge>
                   <Badge>{timezone}</Badge>
                 </div>
@@ -295,17 +295,17 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
           <aside className="relative hidden min-h-[34rem] content-between overflow-hidden bg-[#261913] p-8 text-[#fff7ec] lg:grid">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(211,135,82,0.28),transparent_22rem),radial-gradient(circle_at_70%_70%,rgba(255,247,236,0.12),transparent_20rem)]" />
             <div className="relative">
-              <Badge className="border-white/15 bg-white/10 text-[#f1d6c2]">Reservas SaaS</Badge>
-              <h1 className="mt-6 max-w-sm text-5xl font-semibold leading-none">Control del salon sin ruido.</h1>
+              <Badge className="border-white/15 bg-white/10 text-[#f1d6c2]">Panel del restaurante</Badge>
+              <h1 className="mt-6 max-w-sm text-5xl font-semibold leading-none">Todo bajo control, sin complicaciones.</h1>
             </div>
             <div className="relative grid gap-3 text-sm text-[#e9d4c3]">
-              <p>Agenda, configuracion y clientes en una misma consola operativa.</p>
-              <p>Demo lista para probar: `demo-bistro`, `owner@demo-bistro.test`, `admin123`.</p>
+              <p>Agenda, configuracion y clientes en un solo lugar.</p>
+              <p>Demo: restaurante demo-bistro, email owner@demo-bistro.test, clave admin123.</p>
             </div>
           </aside>
 
           <div className="p-5 sm:p-8">
-            <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Ingreso staff</p>
+            <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Acceso del personal</p>
             <h2 className="mt-2 text-4xl font-semibold leading-tight">Entrar al panel</h2>
             <form className="mt-7 grid gap-4" onSubmit={submit}>
               <Field label="Restaurante">
@@ -792,7 +792,7 @@ function nextActions(status: ReservationStatus) {
     return [
       { status: "seated" as const, label: "Sentar", variant: "primary" as const, icon: <ForkKnife size={15} weight="bold" /> },
       { status: "cancelled" as const, label: "Cancelar", variant: "danger" as const, icon: <XCircle size={15} weight="bold" /> },
-      { status: "no_show" as const, label: "No-show", variant: "secondary" as const, icon: <WarningCircle size={15} weight="bold" /> }
+      { status: "no_show" as const, label: "No vino", variant: "secondary" as const, icon: <WarningCircle size={15} weight="bold" /> }
     ];
   }
   if (status === "seated") {
@@ -844,7 +844,7 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
           </ConfigForm>
 
           <ConfigForm
-            description="Cada mesa crea automaticamente su unidad single para el motor."
+            description="Cada mesa que agregues va a aparecer disponible en la agenda."
             error={create.error}
             pending={create.isPending}
             title="Mesas"
@@ -872,7 +872,7 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
           </ConfigForm>
 
           <ConfigForm
-            description="Combina mesas solo cuando haga falta para grupos grandes."
+            description="Para grupos que necesitan mas de una mesa juntas."
             error={create.error}
             pending={create.isPending}
             title="Combos"
@@ -914,7 +914,7 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
 
           <ConfigForm
             className="lg:col-span-2"
-            description="Define ventanas, cruce de medianoche, limpieza, pacing y sobre-reserva operativa."
+            description="Define los dias y horarios en que los clientes pueden reservar."
             error={create.error}
             pending={create.isPending}
             title="Turnos"
@@ -948,11 +948,11 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
               <Field label="Intervalo"><input className={inputClassName} defaultValue={30} name="slotIntervalMin" type="number" /></Field>
               <Field label="Duracion"><input className={inputClassName} defaultValue={90} name="turnDurationMin" type="number" /></Field>
               <Field label="Limpieza"><input className={inputClassName} defaultValue={0} min={0} name="bufferMin" type="number" /></Field>
-              <Field label="Modo"><select className={inputClassName} name="seatingMode"><option value="rolling">Rolling</option><option value="fixed">Fixed</option></select></Field>
+              <Field label="Modo"><select className={inputClassName} name="seatingMode"><option value="rolling">Continuo</option><option value="fixed">Horarios fijos</option></select></Field>
             </div>
             <div className="grid gap-2 md:grid-cols-2">
-              <Field hint="Cubiertos maximos por ventana. Vacio = sin tope." label="Pacing"><input className={inputClassName} min={1} name="pacingCap" type="number" /></Field>
-              <Field hint="Aumenta el pacing configurado, no permite doble-booking de mesas." label="Overbooking %"><input className={inputClassName} defaultValue={0} max={100} min={0} name="overbookingPct" type="number" /></Field>
+              <Field hint="Maximo de personas por franja horaria. Dejar vacio si no hay limite." label="Limite de cubiertos"><input className={inputClassName} min={1} name="pacingCap" type="number" /></Field>
+              <Field hint="Porcentaje adicional de reservas permitidas sobre el limite normal." label="Sobre-cupo %"><input className={inputClassName} defaultValue={0} max={100} min={0} name="overbookingPct" type="number" /></Field>
             </div>
             <Field label="Horarios fijos"><input className={inputClassName} name="fixedTimes" placeholder="12:00, 13:30" /></Field>
             <ExistingList
@@ -963,14 +963,14 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
                 const crossesMidnight = end && start && end <= start;
                 const buffer = number(shift, "buffer_min");
                 const overbooking = number(shift, "overbooking_pct");
-                return `${dayNames[number(shift, "day_of_week")]} ${start} - ${end}${crossesMidnight ? " (+1)" : ""} - limpieza ${buffer}m - overbooking ${overbooking}%`;
+                return `${dayNames[number(shift, "day_of_week")]} ${start} - ${end}${crossesMidnight ? " (+1)" : ""} - limpieza ${buffer}m - sobre-cupo ${overbooking}%`;
               }}
             />
           </ConfigForm>
 
           <ConfigForm
             className="lg:col-span-2"
-            description="Cierres completos o ventanas especiales; el horario especial tambien puede cruzar medianoche."
+            description="Dias que el local esta cerrado o con horario distinto al habitual."
             error={create.error}
             pending={create.isPending}
             title="Excepciones"
@@ -1014,9 +1014,9 @@ function Config({ summary, refresh }: { summary?: Summary; refresh: () => void }
           <div className="grid gap-5 p-4 sm:p-5">
             <div>
               <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Identidad publica</p>
-              <h3 className="mt-1 text-2xl font-semibold">Branding del restaurante</h3>
+              <h3 className="mt-1 text-2xl font-semibold">Apariencia del restaurante</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
-                Estos datos alimentan el booking publico sin bifurcar el producto.
+                Esta informacion aparece en la pagina de reservas que ven tus clientes.
               </p>
             </div>
             <form
@@ -1088,39 +1088,39 @@ function DistributionPanel({ restaurantName, restaurantSlug }: { restaurantName:
           <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Distribucion</p>
           <h3 className="mt-1 text-2xl font-semibold">Un link, todos los canales</h3>
           <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
-            Instagram, web, QR y WhatsApp llevan al mismo flujo corto de reserva.
+            Compartí el link de reservas por Instagram, tu web, un QR o WhatsApp.
           </p>
         </div>
 
         <DistributionCopy
           copied={copied}
-          description="Pegalo en la bio o en cualquier link-in-bio."
+          description="Pegalo en tu perfil de Instagram para que tus seguidores reserven directo."
           icon={<InstagramLogo size={20} weight="duotone" />}
-          label="Bio de Instagram"
+          label="Instagram"
           value={bookingUrl}
           onCopy={copyValue}
         />
         <DistributionCopy
           copied={copied}
-          description="Boton liviano para el sitio del restaurante."
+          description="Un boton de reserva para pegar en tu pagina web."
           icon={<LinkSimple size={20} weight="duotone" />}
-          label="Boton Reservar"
+          label="Pagina web"
           value={reserveButton}
           onCopy={copyValue}
         />
         <DistributionCopy
           copied={copied}
-          description="Embed completo del booking dentro de la web."
+          description="Instala el formulario de reserva dentro de tu sitio web (requiere ayuda tecnica)."
           icon={<Code size={20} weight="duotone" />}
-          label="Embed web"
+          label="Insertar en web"
           value={embedScript}
           onCopy={copyValue}
         />
         <DistributionCopy
           copied={copied}
-          description="Respuesta automatica simple para WhatsApp Business."
+          description="Mensaje listo para mandar a tus clientes por WhatsApp con el link de reserva."
           icon={<WhatsappLogo size={20} weight="duotone" />}
-          label="Auto-respuesta WhatsApp"
+          label="Mensaje de WhatsApp"
           value={whatsappReply}
           onCopy={copyValue}
         />
@@ -1193,7 +1193,7 @@ function ConfigOverview({ summary }: { summary?: Summary }) {
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <MetricCard icon={<MapPin size={20} weight="duotone" />} label="Zonas" value={String(summary?.zones.length ?? 0)} />
       <MetricCard icon={<ForkKnife size={20} weight="duotone" />} label="Mesas" value={String(summary?.mesas.length ?? 0)} />
-      <MetricCard icon={<StackPlus size={20} weight="duotone" />} label="Unidades" value={String(summary?.seatingUnits.length ?? 0)} />
+      <MetricCard icon={<StackPlus size={20} weight="duotone" />} label="Combos" value={String(summary?.seatingUnits.length ?? 0)} />
       <MetricCard icon={<Clock size={20} weight="duotone" />} label="Turnos" value={String(summary?.shifts.length ?? 0)} />
     </div>
   );
@@ -1316,7 +1316,7 @@ function Analytics({ summary }: { summary?: Summary }) {
             </Badge>
             <h2 className="mt-4 text-4xl font-semibold leading-tight">Pulso del restaurante</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">
-              Reservas, ocupacion, canales y recurrencia calculados sobre datos reales del tenant.
+              Reservas, ocupacion, canales y recurrencia calculados sobre las reservas de tu restaurante.
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
