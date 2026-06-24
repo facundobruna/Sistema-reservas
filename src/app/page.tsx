@@ -17,12 +17,12 @@ export default function HomePage() {
       <section className="mx-auto grid max-w-7xl gap-10 py-8 md:grid-cols-[1.02fr_0.98fr] md:py-16">
         <div className="reveal-in grid content-center gap-8">
           <div>
-            <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Mesa Clara / conversion para restaurantes</p>
+            <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Mesa Clara / para restaurantes</p>
             <h1 className="mt-5 max-w-3xl text-5xl font-semibold leading-[0.98] tracking-normal md:text-7xl">
               La reserva mas rapida y sin friccion que existe.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-[var(--muted-foreground)] md:text-lg">
-              Vos ya tenes a la gente en Instagram, WhatsApp o tu web. Mesa Clara la convierte en reservas confirmadas, sin login, DNI, sena ni app que bajar.
+              Tus clientes ya estan en Instagram, WhatsApp o tu pagina web. Mesa Clara les permite reservar en segundos, sin crear cuenta, sin poner el DNI ni bajar ninguna app.
             </p>
           </div>
 
@@ -52,7 +52,7 @@ export default function HomePage() {
               className="inline-flex min-h-12 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card-raised)] px-5 text-sm font-semibold text-[var(--foreground)] shadow-[var(--shadow-soft)] transition-all duration-500 ease-[var(--ease-press)] hover:-translate-y-0.5"
               href="/r/demo-bistro"
             >
-              Booking demo
+              Ver ejemplo
             </Link>
             <Link
               className="inline-flex min-h-12 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card-raised)] px-5 text-sm font-semibold text-[var(--foreground)] shadow-[var(--shadow-soft)] transition-all duration-500 ease-[var(--ease-press)] hover:-translate-y-0.5"
@@ -100,9 +100,9 @@ export default function HomePage() {
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               {[
-                ["Disponibilidad viva", CalendarDots],
-                ["Anti doble-booking", ShieldCheck],
-                ["Agenda para staff", ForkKnife]
+                ["Siempre actualizado", CalendarDots],
+                ["Sin reservas duplicadas", ShieldCheck],
+                ["Panel para tu equipo", ForkKnife]
               ].map(([label, Icon]) => (
                 <div className="rounded-[var(--radius-md)] bg-[var(--muted)] p-4" key={String(label)}>
                   <Icon size={24} weight="duotone" className="text-[var(--accent)]" />
@@ -117,14 +117,14 @@ export default function HomePage() {
       <section className="mx-auto grid max-w-7xl gap-5 border-t border-[var(--border)] py-8 md:grid-cols-[0.8fr_1.2fr]">
         <div>
           <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">Distribucion</p>
-          <h2 className="mt-2 max-w-xl text-3xl font-semibold leading-tight md:text-4xl">Tu audiencia ya existe. El link la convierte.</h2>
+          <h2 className="mt-2 max-w-xl text-3xl font-semibold leading-tight md:text-4xl">Tus clientes ya estan en las redes. Que reserven desde ahi.</h2>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {[
-            ["Bio de Instagram", "Un link prolijo y branded para pegar donde el restaurante ya recibe demanda.", InstagramLogo],
-            ["Boton Reservar", "Snippet simple para insertar en la web propia del local.", LinkSimple],
-            ["QR", "Mesa, puerta o mostrador apuntando al mismo flujo en tres pasos.", QrCode],
-            ["WhatsApp", "Auto-respuesta con link. WhatsApp reparte; la reserva pasa en Mesa Clara.", WhatsappLogo]
+            ["Instagram", "Pones el link en tu perfil y tus seguidores reservan directo desde ahi.", InstagramLogo],
+            ["Pagina web", "Un boton de reserva que podés agregar facilmente a tu sitio web.", LinkSimple],
+            ["Codigo QR", "Lo imprimis y lo pones en la mesa o en la entrada del local.", QrCode],
+            ["WhatsApp", "Tus clientes te escriben y vos les mandas el link para reservar.", WhatsappLogo]
           ].map(([title, body, Icon]) => (
             <article className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-soft)]" key={String(title)}>
               <Icon size={24} weight="duotone" className="text-[var(--accent)]" />

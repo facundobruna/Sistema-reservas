@@ -15,7 +15,7 @@ export function Button({ className, variant = "primary", size = "md", ...props }
         size === "md" && "min-h-11 px-4 text-sm",
         size === "icon" && "h-10 w-10 p-0",
         variant === "primary" &&
-          "border-transparent bg-[var(--foreground)] text-[var(--background)] shadow-[var(--shadow-soft)] hover:opacity-90",
+          "border-transparent bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[var(--shadow-soft)] hover:opacity-90",
         variant === "secondary" &&
           "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] shadow-[var(--shadow-soft)] hover:border-[var(--border-strong)] hover:bg-[var(--muted)]",
         variant === "ghost" &&
