@@ -292,13 +292,13 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
     <main id="content" className="grid min-h-screen bg-[var(--background)] px-4 py-6 lg:place-items-center">
       <section className="surface-shell mx-auto grid w-full max-w-5xl">
         <div className="surface-core grid overflow-hidden lg:grid-cols-[0.95fr_1.05fr]">
-          <aside className="relative hidden min-h-[34rem] content-between overflow-hidden bg-[#261913] p-8 text-[#fff7ec] lg:grid">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(211,135,82,0.28),transparent_22rem),radial-gradient(circle_at_70%_70%,rgba(255,247,236,0.12),transparent_20rem)]" />
+          <aside className="relative hidden min-h-[34rem] content-between overflow-hidden bg-[#17251f] p-8 text-[#f5fff8] lg:grid">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(62,207,110,0.18),transparent_22rem),radial-gradient(circle_at_70%_70%,rgba(167,216,191,0.10),transparent_20rem)]" />
             <div className="relative">
-              <Badge className="border-white/15 bg-white/10 text-[#f1d6c2]">Panel del restaurante</Badge>
+              <Badge className="border-white/15 bg-white/10 text-[#a7d8bf]">Panel del restaurante</Badge>
               <h1 className="mt-6 max-w-sm text-5xl font-semibold leading-none">Todo bajo control, sin complicaciones.</h1>
             </div>
-            <div className="relative grid gap-3 text-sm text-[#e9d4c3]">
+            <div className="relative grid gap-3 text-sm text-[#a7d8bf]">
               <p>Agenda, configuracion y clientes en un solo lugar.</p>
               <p>Demo: restaurante demo-bistro, email owner@demo-bistro.test, clave admin123.</p>
             </div>
